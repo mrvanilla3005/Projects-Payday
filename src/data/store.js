@@ -4,6 +4,7 @@
 // ─────────────────────────────────────────────
 
 import { supabase } from '../lib/supabase.js'
+import { seedData } from './seed.js'
 import { seedKupony, seedProdeje, seedZasoby } from './seedProdej.js'
 
 // Návrhy aktivit (volné zadání)
@@ -35,6 +36,22 @@ export const MONTHS = [
   'Leden', 'Únor', 'Březen', 'Duben', 'Květen', 'Červen',
   'Červenec', 'Srpen', 'Září', 'Říjen', 'Listopad', 'Prosinec',
 ]
+
+// ── Seed – nahraje data pokud je tabulka prázdná ──
+
+let _seeded = false
+export async function insertSeedData() {
+  if (_seeded) return
+  const { count, error } = await supabase
+    .from('records')
+    .select('*', { count: 'exact', head: true })
+  if (error) { console.error('insertSeedData count:', error); return }
+  if (count === 0) {
+    const { error: insErr } = await supabase.from('records').insert(seedData)
+    if (insErr) console.error('insertSeedData insert:', insErr)
+  }
+  _seeded = true
+}
 
 // ── CRUD – Supabase tabulka "records" ─────────
 
