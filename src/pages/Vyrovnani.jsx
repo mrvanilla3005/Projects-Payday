@@ -93,7 +93,7 @@ function StatusDot({ totalSum, totalPaid }) {
 
 // ── Skupina jednoho měsíce ──────────────────────
 function MonthGroup({ mesic, rok, records, isOpen, onToggle, onSave, onDelete, onAdd }) {
-  const totalH    = records.reduce((s, r) => s + (r.hodiny || 0), 0)
+  const totalH    = records.filter(r => r.typ === 'hodiny' || r.typ === 'podil_prodej').reduce((s, r) => s + (r.hodiny || 0), 0)
   const totalSum  = records.reduce((s, r) => s + (r.sum  || 0), 0)
   const totalPaid = records.reduce((s, r) => s + (r.paid || 0), 0)
   const diff      = totalSum - totalPaid
@@ -196,7 +196,7 @@ function MonthGroup({ mesic, rok, records, isOpen, onToggle, onSave, onDelete, o
 
 // ── Skupina jednoho roku ────────────────────────
 function YearGroup({ rok, monthGroups, open, onToggle, onSave, onDelete, onAdd, yearOpen, onYearToggle }) {
-  const totalH = monthGroups.flatMap(g => g.records).reduce((s, r) => s + (r.hodiny || 0), 0)
+  const totalH = monthGroups.flatMap(g => g.records).filter(r => r.typ === 'hodiny' || r.typ === 'podil_prodej').reduce((s, r) => s + (r.hodiny || 0), 0)
 
   return (
     <div className="space-y-1.5">
@@ -301,7 +301,7 @@ export default function Vyrovnani() {
   const years = Object.keys(yearMap).sort((a, b) => b - a)
   const filteredYears = filterRok === 'vse' ? years : years.filter(y => y === filterRok)
 
-  const totalH    = records.reduce((s, r) => s + (r.hodiny || 0), 0)
+  const totalH    = records.filter(r => r.typ === 'hodiny' || r.typ === 'podil_prodej').reduce((s, r) => s + (r.hodiny || 0), 0)
   const totalPaid = records.reduce((s, r) => s + (r.paid || 0), 0)
 
   const allKeys = Object.keys(monthMap)
