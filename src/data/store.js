@@ -171,69 +171,62 @@ export function currentMonthYear() {
   return { mesic: now.getMonth() + 1, rok: now.getFullYear() }
 }
 
-// ── PRODEJ – kupony, zásoby, prodeje ──────────
+// ── PRODEJ – Supabase tabulky ──────────────────
 
-const KUPONY_KEY  = 'kupony_v2'
-const ZASOBY_KEY2 = 'zasoby_prodej_v1'
-const PRODEJE_KEY = 'prodeje_v1'
-
-function _crud(key, seed) {
+function _sb(table) {
   return {
-    load() {
-      try {
-        const raw = localStorage.getItem(key)
-        if (!raw) { localStorage.setItem(key, JSON.stringify(seed)); return seed }
-        return JSON.parse(raw)
-      } catch { return [] }
+    async load() {
+      const { data, error } = await supabase.from(table).select('*').order('createdAt', { ascending: false })
+      if (error) { console.error(`load ${table}:`, error); return [] }
+      return data
     },
-    save(list) { localStorage.setItem(key, JSON.stringify(list)) },
-    add(data) {
-      const list = this.load()
-      const item = { ...data, id: data.id || crypto.randomUUID(), createdAt: new Date().toISOString() }
-      list.unshift(item)
-      this.save(list)
-      return item
+    async add(item) {
+      const row = { ...item, id: item.id || crypto.randomUUID(), createdAt: new Date().toISOString() }
+      const { data, error } = await supabase.from(table).insert(row).select().single()
+      if (error) { console.error(`add ${table}:`, error); return null }
+      return data
     },
-    update(id, data) {
-      const list = this.load()
-      const idx  = list.findIndex(x => x.id === id)
-      if (idx === -1) return null
-      list[idx] = { ...list[idx], ...data, updatedAt: new Date().toISOString() }
-      this.save(list)
-      return list[idx]
+    async update(id, patch) {
+      const { data, error } = await supabase.from(table).update({ ...patch, updatedAt: new Date().toISOString() }).eq('id', id).select().single()
+      if (error) { console.error(`update ${table}:`, error); return null }
+      return data
     },
-    remove(id) { this.save(this.load().filter(x => x.id !== id)) },
+    async remove(id) {
+      const { error } = await supabase.from(table).delete().eq('id', id)
+      if (error) console.error(`remove ${table}:`, error)
+    },
   }
 }
 
-const kuponyStore  = _crud(KUPONY_KEY,  seedKupony)
-const zasobyStore  = _crud(ZASOBY_KEY2, seedZasoby)
-const prodejeStore = _crud(PRODEJE_KEY, seedProdeje)
+const kuponyStore  = _sb('kupony')
+const zasobyStore  = _sb('zasoby')
+const prodejeStore = _sb('prodeje')
 
-export function patchKupony(newItems) {
-  const list = kuponyStore.load()
-  const ids  = new Set(list.map(k => k.id))
+export async function patchKupony(newItems) {
+  const { data, error } = await supabase.from('kupony').select('id')
+  if (error) { console.error('patchKupony:', error); return 0 }
+  const ids   = new Set(data.map(k => k.id))
   const toAdd = newItems.filter(k => !ids.has(k.id))
   if (toAdd.length === 0) return 0
-  kuponyStore.save([...list, ...toAdd])
+  const { error: insErr } = await supabase.from('kupony').insert(toAdd)
+  if (insErr) console.error('patchKupony insert:', insErr)
   return toAdd.length
 }
 
-export const loadKupony    = () => kuponyStore.load()
-export const saveKupony    = l  => kuponyStore.save(l)
-export const addKupon      = d  => kuponyStore.add(d)
-export const updateKupon   = (id, d) => kuponyStore.update(id, d)
-export const deleteKupon   = id => kuponyStore.remove(id)
+export const loadKupony   = ()       => kuponyStore.load()
+export const addKupon     = d        => kuponyStore.add(d)
+export const updateKupon  = (id, d)  => kuponyStore.update(id, d)
+export const deleteKupon  = id       => kuponyStore.remove(id)
 
-export const loadZasoby    = () => zasobyStore.load()
-export const addZasoba     = d  => zasobyStore.add(d)
-export const updateZasoba  = (id, d) => zasobyStore.update(id, d)
-export const deleteZasoba  = id => zasobyStore.remove(id)
+export const loadZasoby   = ()       => zasobyStore.load()
+export const addZasoba    = d        => zasobyStore.add(d)
+export const updateZasoba = (id, d)  => zasobyStore.update(id, d)
+export const deleteZasoba = id       => zasobyStore.remove(id)
 
-export const loadProdeje   = () => prodejeStore.load()
-export const addProdej     = d  => prodejeStore.add(d)
-export const updateProdej  = (id, d) => prodejeStore.update(id, d)
-export const deleteProdej  = id => prodejeStore.remove(id)
+export const loadProdeje  = ()       => prodejeStore.load()
+export const addProdej    = d        => prodejeStore.add(d)
+export const updateProdej = (id, d)  => prodejeStore.update(id, d)
+export const deleteProdej = id       => prodejeStore.remove(id)
 
 export const PROVIZE_SAZBY = { iphone: 0.05, elektronika: 0.10 }
 

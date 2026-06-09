@@ -483,35 +483,36 @@ export default function Prodej() {
   const [zasoby,  setZasoby]  = useState([])
   const [prodeje, setProdeje] = useState([])
 
-  function reload() {
-    setKupony(loadKupony())
-    setZasoby(loadZasoby())
-    setProdeje(loadProdeje())
+  async function reload() {
+    const [k, z, p] = await Promise.all([loadKupony(), loadZasoby(), loadProdeje()])
+    setKupony(k)
+    setZasoby(z)
+    setProdeje(p)
   }
-  useEffect(reload, [])
+  useEffect(() => { reload() }, [])
 
   // ── Kupony ──
-  function saveKupon(id, data)     { updateKupon(id, data); reload() }
-  function delKupon(id)            { if (!confirm('Smazat?')) return; deleteKupon(id); reload() }
-  function addKuponRow(typ, datum) {
-    if (typ === 'kupon') addKupon({ datum, typ: 'kupon', kod: '', nefunguje: false, poznamka: '' })
-    else                 addKupon({ datum, typ: 'nakup', nazev: '', kusu: null, castka: null, doprava: null, datumDodani: null, poznamka: '' })
-    reload()
+  async function saveKupon(id, data)     { await updateKupon(id, data); await reload() }
+  async function delKupon(id)            { if (!confirm('Smazat?')) return; await deleteKupon(id); await reload() }
+  async function addKuponRow(typ, datum) {
+    if (typ === 'kupon') await addKupon({ datum, typ: 'kupon', kod: '', nefunguje: false, poznamka: '' })
+    else                 await addKupon({ datum, typ: 'nakup', nazev: '', kusu: null, castka: null, doprava: null, datumDodani: null, poznamka: '' })
+    await reload()
   }
-  function changeDatum(oldDatum, typ, newDatum) {
-    kupony.filter(k => k.datum === oldDatum && k.typ === typ).forEach(k => updateKupon(k.id, { datum: newDatum }))
-    reload()
+  async function changeDatum(oldDatum, typ, newDatum) {
+    await Promise.all(kupony.filter(k => k.datum === oldDatum && k.typ === typ).map(k => updateKupon(k.id, { datum: newDatum })))
+    await reload()
   }
 
   // ── Zásoby ──
-  function saveZasoba(id, data) { updateZasoba(id, data); reload() }
-  function delZasoba(id)  { if (!confirm('Smazat?')) return; deleteZasoba(id); reload() }
-  function newZasoba(kat) { addZasoba({ kategorie: kat, nazev: '', kusu: null, cenaNakup: null, cenaProdej: null, poznamka: '' }); reload() }
+  async function saveZasoba(id, data) { await updateZasoba(id, data); await reload() }
+  async function delZasoba(id)  { if (!confirm('Smazat?')) return; await deleteZasoba(id); await reload() }
+  async function newZasoba(kat) { await addZasoba({ kategorie: kat, nazev: '', kusu: null, cenaNakup: null, cenaProdej: null, poznamka: '' }); await reload() }
 
   // ── Prodeje ──
-  function saveProdej(id, data) { updateProdej(id, data); reload() }
-  function delProdej(id)  { if (!confirm('Smazat?')) return; deleteProdej(id); reload() }
-  function newProdej(kat) { addProdej({ datum: new Date().toISOString().slice(0, 10), kategorie: kat, nazev: '', kusu: null, cena: null, poznamka: '' }); reload() }
+  async function saveProdej(id, data) { await updateProdej(id, data); await reload() }
+  async function delProdej(id)  { if (!confirm('Smazat?')) return; await deleteProdej(id); await reload() }
+  async function newProdej(kat) { await addProdej({ datum: new Date().toISOString().slice(0, 10), kategorie: kat, nazev: '', kusu: null, cena: null, poznamka: '' }); await reload() }
 
   // ── Výpočty ──
   const iPhoneProdeje = prodeje.filter(p => p.kategorie === 'iphone')
