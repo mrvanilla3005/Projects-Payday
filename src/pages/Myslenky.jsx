@@ -12,6 +12,7 @@ export default function Myslenky() {
   const [supported, setSupported]   = useState(true)
   const [openDays, setOpenDays]     = useState(() => new Set([new Date().toISOString().slice(0, 10)]))
   const recognitionRef = useRef(null)
+  const listeningRef   = useRef(false)
 
   async function reload() {
     const t = await loadThoughts()
@@ -25,15 +26,13 @@ export default function Myslenky() {
     }
   }, [])
 
-  function startListening() {
+  function buildRecognition(accumulatedRef) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) return
+    if (!SR) return null
     const recognition = new SR()
     recognition.lang = 'cs-CZ'
     recognition.continuous = true
     recognition.interimResults = true
-
-    let accumulated = transcript
 
     recognition.onresult = (e) => {
       let final = ''
@@ -43,20 +42,44 @@ export default function Myslenky() {
         else inter += e.results[i][0].transcript
       }
       if (final) {
-        accumulated += (accumulated ? ' ' : '') + final.trim()
-        setTranscript(accumulated)
+        accumulatedRef.current += (accumulatedRef.current ? ' ' : '') + final.trim()
+        setTranscript(accumulatedRef.current)
       }
       setInterim(inter)
     }
-    recognition.onend  = () => { setListening(false); setInterim('') }
-    recognition.onerror = () => { setListening(false); setInterim('') }
 
-    recognition.start()
+    recognition.onend = () => {
+      // iOS Safari zastaví recognition po pauze – restartujeme pokud stále posloucháme
+      if (listeningRef.current) {
+        try { recognition.start() } catch {}
+      } else {
+        setListening(false)
+        setInterim('')
+      }
+    }
+
+    recognition.onerror = (e) => {
+      if (e.error === 'aborted') return
+      listeningRef.current = false
+      setListening(false)
+      setInterim('')
+    }
+
+    return recognition
+  }
+
+  function startListening() {
+    const accumulatedRef = { current: transcript }
+    const recognition = buildRecognition(accumulatedRef)
+    if (!recognition) return
+    listeningRef.current = true
     recognitionRef.current = recognition
+    recognition.start()
     setListening(true)
   }
 
   function stopListening() {
+    listeningRef.current = false
     recognitionRef.current?.stop()
     setListening(false)
     setInterim('')

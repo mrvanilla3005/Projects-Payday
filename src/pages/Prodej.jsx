@@ -654,7 +654,7 @@ export default function Prodej() {
       </div>
 
       {/* iPhony */}
-      <Section title="iPhony" icon={Smartphone} color="text-accent">
+      <Section title="iPhony" icon={Smartphone} color="text-accent" defaultOpen={false}>
         <SubSection title="K dispozici">
           <IPhonyZasobyTable items={iPhoneZasoby} onUpdate={saveZasoba} onDelete={delZasoba} onAdd={newZasoba} onTransfer={transferToProdej} />
         </SubSection>
