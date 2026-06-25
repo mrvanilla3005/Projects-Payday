@@ -1,13 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import {
-  loadKupony, addKupon, updateKupon, deleteKupon,
   loadZasoby, addZasoba, updateZasoba, deleteZasoba,
   loadProdeje, addProdej, updateProdej, deleteProdej,
   formatCZK, PROVIZE_SAZBY,
 } from '../data/store.js'
-import { Plus, Trash2, ChevronDown, ChevronRight, Smartphone, Cpu, Tag } from 'lucide-react'
-
-const KUPON_EUR = 50
+import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Smartphone, Cpu, GripVertical, ArrowRight } from 'lucide-react'
 
 // ── Inline buňka ────────────────────────────────────────
 function Cell({ value, type = 'text', step, onSave, fmt, colorFn, readOnly }) {
@@ -151,118 +148,288 @@ function ZasobyTable({ kategorie, items, onUpdate, onDelete, onAdd }) {
   )
 }
 
-// ── Nákupy v kupónové skupině (tabulka jako iPhony) ─────
-function NakupKuponyTable({ items, onSave, onDelete }) {
-  const fmtEur  = v => v != null ? `€ ${Number(v).toFixed(2)}` : null
-  const fmtNum  = v => v != null ? String(v) : null
-  const fmtDate = v => v ? new Date(v + 'T12:00:00').toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
+// ── iPhony – zásoby (K dispozici) ──────────────────────
+function IPhonyZasobyTable({ items, onUpdate, onDelete, onAdd, onTransfer }) {
+  const fmtCZK = v => v != null ? formatCZK(v) : null
+  const fmtNum = v => v != null ? String(v) : null
+  const [selectedIds, setSelectedIds] = useState(new Set())
 
-  if (items.length === 0) return null
-
-  return (
-    <div className="border-t border-border/20 bg-red-500/[0.03]">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-border/20">
-            <th className="text-left text-xs text-danger/60 uppercase tracking-wider px-3 py-1.5 font-medium pl-5">Název</th>
-            <th className="text-left text-xs text-danger/60 uppercase tracking-wider px-3 py-1.5 font-medium">Kusů</th>
-            <th className="text-left text-xs text-danger/60 uppercase tracking-wider px-3 py-1.5 font-medium">Cena (€)</th>
-            <th className="text-left text-xs text-danger/60 uppercase tracking-wider px-3 py-1.5 font-medium">Doprava (€)</th>
-            <th className="text-left text-xs text-danger/60 uppercase tracking-wider px-3 py-1.5 font-medium">Datum dodání</th>
-            <th className="w-8 px-2" />
-          </tr>
-        </thead>
-        <tbody>
-          {items.map(n => (
-            <tr key={n.id} className="border-b border-border/10 hover:bg-white/[0.02] group">
-              <td className="px-1 py-0.5 pl-3 min-w-[160px]">
-                <Cell value={n.nazev} onSave={v => onSave(n.id, { nazev: v ?? '' })} />
-              </td>
-              <td className="px-1 py-0.5 min-w-[60px]">
-                <Cell value={n.kusu} type="number" step="1" onSave={v => onSave(n.id, { kusu: v })} fmt={fmtNum} />
-              </td>
-              <td className="px-1 py-0.5 min-w-[100px]">
-                <Cell value={n.castka} type="number" step="0.01" onSave={v => onSave(n.id, { castka: v })} fmt={fmtEur} colorFn={() => 'text-danger font-mono'} />
-              </td>
-              <td className="px-1 py-0.5 min-w-[100px]">
-                <Cell value={n.doprava} type="number" step="0.01" onSave={v => onSave(n.id, { doprava: v })} fmt={fmtEur} colorFn={() => 'text-danger font-mono'} />
-              </td>
-              <td className="px-1 py-0.5 min-w-[120px]">
-                <Cell value={n.datumDodani} type="date" onSave={v => onSave(n.id, { datumDodani: v })} fmt={fmtDate} />
-              </td>
-              <td className="px-2 py-0.5 text-right">
-                <button onClick={() => onDelete(n.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all p-1">
-                  <Trash2 size={11} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+  const TYP_ORD   = { '16': 0, '17': 1 }
+  const MODEL_ORD = { null: 0, undefined: 0, '': 0, klasický: 0, Pro: 1, 'Pro Max': 2 }
+  const sorted    = [...items].sort((a, b) =>
+    (TYP_ORD[a.typ] ?? 99) - (TYP_ORD[b.typ] ?? 99) ||
+    (MODEL_ORD[a.model ?? null] ?? 99) - (MODEL_ORD[b.model ?? null] ?? 99) ||
+    (a.velikost ?? 0) - (b.velikost ?? 0)
   )
-}
 
-// ── Prodeje (Historie) ──────────────────────────────────
-function ProdejeTable({ kategorie, items, onUpdate, onDelete, onAdd }) {
-  const sazba = PROVIZE_SAZBY[kategorie]
-  const fmtDate = v => v ? new Date(v + 'T12:00:00').toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
-  const fmtCZK  = v => v != null ? formatCZK(v) : null
-  const fmtNum  = v => v != null ? String(v) : null
+  function toggleRow(id) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    setSelectedIds(selectedIds.size === sorted.length ? new Set() : new Set(sorted.map(r => r.id)))
+  }
+
+  async function handleTransfer() {
+    if (selectedIds.size === 0) return
+    await onTransfer(selectedIds)
+    setSelectedIds(new Set())
+  }
+
+  const allSelected = sorted.length > 0 && selectedIds.size === sorted.length
 
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
           <tr className="border-b border-border/30">
-            {['Datum', 'Název', 'Ks', 'Cena / ks', 'Total', `Provize (${sazba * 100} %)`, 'Poznámka'].map(h => (
-              <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-3 py-2 font-medium first:pl-5">{h}</th>
+            <th className="px-3 py-2 w-9">
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={toggleAll}
+                className="accent-accent cursor-pointer"
+              />
+            </th>
+            {['Ks', 'Typ', 'Model', 'Velikost', 'Barva', 'Prodejní cena'].map(h => (
+              <th key={h} className="text-left text-xs text-muted uppercase tracking-wider px-3 py-2 font-medium">{h}</th>
             ))}
             <th className="w-8 px-2" />
           </tr>
         </thead>
         <tbody>
-          {items.length === 0 && (
-            <tr><td colSpan={8} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
+          {sorted.length === 0 && (
+            <tr><td colSpan={8} className="px-5 py-3 text-muted text-sm">Žádné zásoby.</td></tr>
           )}
-          {items.map(r => {
-            const total   = (r.kusu || 0) * (r.cena || 0)
-            const provize = Math.round(total * sazba)
+          {sorted.map(r => (
+            <tr key={r.id} className={`border-b border-border/20 hover:bg-white/[0.025] group ${selectedIds.has(r.id) ? 'bg-accent/5' : ''}`}>
+              <td className="px-3 py-0.5 w-9">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(r.id)}
+                  onChange={() => toggleRow(r.id)}
+                  className="accent-accent cursor-pointer"
+                />
+              </td>
+              <td className="px-1 py-0.5 min-w-[55px]">
+                <Cell value={r.kusu} type="number" step="1" onSave={v => onUpdate(r.id, { kusu: v })} fmt={fmtNum} />
+              </td>
+              <td className="px-1 py-0.5 min-w-[65px]">
+                <SelectCell value={r.typ} options={['16', '17']} onSave={v => onUpdate(r.id, { typ: v })} />
+              </td>
+              <td className="px-1 py-0.5 min-w-[110px]">
+                <SelectCell
+                  value={r.model && r.model !== 'klasický' ? r.model : null}
+                  options={['Pro', 'Pro Max']}
+                  onSave={v => onUpdate(r.id, { model: v || null })}
+                />
+              </td>
+              <td className="px-1 py-0.5 min-w-[85px]">
+                <SelectCell
+                  value={r.velikost != null ? String(r.velikost) : null}
+                  options={['128', '256', '512']}
+                  suffix=" GB"
+                  onSave={v => onUpdate(r.id, { velikost: v ? Number(v) : null })}
+                />
+              </td>
+              <td className="px-1 py-0.5 min-w-[110px]">
+                <Cell value={r.barva} onSave={v => onUpdate(r.id, { barva: v ?? '' })} />
+              </td>
+              <td className="px-1 py-0.5 min-w-[110px]">
+                <Cell value={r.cenaProdej} type="number" step="1" onSave={v => onUpdate(r.id, { cenaProdej: v })} fmt={fmtCZK} />
+              </td>
+              <td className="px-2 py-0.5 text-right">
+                <button onClick={() => onDelete(r.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all p-1">
+                  <Trash2 size={12} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="flex items-center border-t border-border/20">
+        <button
+          onClick={() => onAdd('iphone')}
+          className="flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm transition-colors flex-1"
+        >
+          <Plus size={13} /> Přidat zboží
+        </button>
+        {selectedIds.size > 0 && (
+          <button
+            onClick={handleTransfer}
+            className="flex items-center gap-2 px-4 py-2.5 text-accent hover:text-white hover:bg-accent/10 text-sm transition-colors border-l border-border/20 font-medium"
+          >
+            <ArrowRight size={13} /> Přesunout do prodeje ({selectedIds.size})
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Dropdown buňka ─────────────────────────────────────
+function SelectCell({ value, options, suffix = '', onSave }) {
+  const [on, setOn] = useState(false)
+  const ref = useRef()
+
+  useEffect(() => { if (on) ref.current?.focus() }, [on])
+
+  if (on) {
+    return (
+      <select
+        ref={ref}
+        value={value ?? ''}
+        onChange={e => { onSave(e.target.value || null); setOn(false) }}
+        onBlur={() => setOn(false)}
+        className="w-full bg-bg border border-accent/60 rounded px-2 py-0.5 text-white text-sm outline-none"
+      >
+        <option value="">–</option>
+        {options.map(o => <option key={o} value={o}>{o}{suffix}</option>)}
+      </select>
+    )
+  }
+
+  return (
+    <div
+      onClick={() => setOn(true)}
+      className="px-2 py-1 min-h-[28px] rounded cursor-pointer hover:bg-white/5 text-sm text-white whitespace-nowrap"
+    >
+      {value != null ? `${value}${suffix}` : <span className="text-white/15 text-xs select-none">–</span>}
+    </div>
+  )
+}
+
+// ── iPhony – tabulka prodejů (seskupeno dle dne) ────────
+function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, onDuplicate }) {
+  const fmtDate = v => v ? new Date(v + 'T12:00:00').toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
+  const fmtCZK  = v => v != null ? formatCZK(v) : null
+  const fmtNum  = v => v != null ? String(v) : null
+
+  // Seskupit dle datum, sestupně; uvnitř dne řadit typ → model → velikost
+  const TYP_ORD   = { '16': 0, '17': 1 }
+  const MODEL_ORD = { null: 0, undefined: 0, '': 0, klasický: 0, Pro: 1, 'Pro Max': 2 }
+  const sortRow   = (a, b) =>
+    (TYP_ORD[a.typ] ?? 99) - (TYP_ORD[b.typ] ?? 99) ||
+    (MODEL_ORD[a.model ?? null] ?? 99) - (MODEL_ORD[b.model ?? null] ?? 99) ||
+    (a.velikost ?? 0) - (b.velikost ?? 0)
+
+  const groups = {}
+  items.forEach(r => { const d = r.datum || ''; if (!groups[d]) groups[d] = []; groups[d].push(r) })
+  Object.values(groups).forEach(g => g.sort(sortRow))
+  const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border/30">
+            {['Datum', 'Ks', 'Typ', 'Model', 'Velikost', 'Barva', 'Prodejní cena', 'Celkem', 'Prodejce', '', ''].map((h, i) => (
+              <th key={i} className="text-left text-xs text-muted uppercase tracking-wider px-3 py-2 font-medium first:pl-5">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.length === 0 && (
+            <tr><td colSpan={10} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
+          )}
+          {sortedDates.map(datum => {
+            const dayItems = groups[datum]
+            const teorTotal = dayItems.reduce((s, r) => s + (r.kusu || 0) * (r.cena || 0), 0)
+            const celkovaCena = dayItems.find(r => r.celkova_cena != null)?.celkova_cena ?? null
+            const slevaKc  = celkovaCena != null && teorTotal > 0 ? teorTotal - celkovaCena : null
+            const slevaPct = slevaKc != null && teorTotal > 0 ? slevaKc / teorTotal * 100 : null
+
             return (
-              <tr key={r.id} className="border-b border-border/20 hover:bg-white/[0.025] group">
-                <td className="px-1 py-0.5 pl-3 min-w-[110px]">
-                  <Cell value={r.datum} type="date" onSave={v => onUpdate(r.id, { datum: v })} fmt={fmtDate} />
-                </td>
-                <td className="px-1 py-0.5 min-w-[160px]">
-                  <Cell value={r.nazev} onSave={v => onUpdate(r.id, { nazev: v ?? '' })} />
-                </td>
-                <td className="px-1 py-0.5 min-w-[55px]">
-                  <Cell value={r.kusu} type="number" step="1" onSave={v => onUpdate(r.id, { kusu: v })} fmt={fmtNum} />
-                </td>
-                <td className="px-1 py-0.5 min-w-[110px]">
-                  <Cell value={r.cena} type="number" step="1" onSave={v => onUpdate(r.id, { cena: v })} fmt={fmtCZK} />
-                </td>
-                <td className="px-1 py-0.5 min-w-[110px]">
-                  <Cell value={total || null} fmt={fmtCZK} readOnly />
-                </td>
-                <td className="px-1 py-0.5 min-w-[110px]">
-                  <Cell value={provize || null} fmt={fmtCZK} readOnly colorFn={() => 'text-success font-mono'} />
-                </td>
-                <td className="px-1 py-0.5 min-w-[140px]">
-                  <Cell value={r.poznamka} onSave={v => onUpdate(r.id, { poznamka: v ?? '' })} />
-                </td>
-                <td className="px-2 py-0.5 text-right">
-                  <button onClick={() => onDelete(r.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all p-1">
-                    <Trash2 size={12} />
-                  </button>
-                </td>
-              </tr>
+              <Fragment key={datum}>
+                {dayItems.map(r => (
+                  <tr key={r.id} className="border-b border-border/10 hover:bg-white/[0.025] group">
+                    <td className="px-1 py-0.5 pl-3 min-w-[110px]">
+                      <Cell value={r.datum} type="date" onSave={v => onUpdate(r.id, { datum: v })} fmt={fmtDate} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[55px]">
+                      <Cell value={r.kusu} type="number" step="1" onSave={v => onUpdate(r.id, { kusu: v })} fmt={fmtNum} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[65px]">
+                      <SelectCell value={r.typ} options={['16', '17']} onSave={v => onUpdate(r.id, { typ: v })} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[110px]">
+                      <SelectCell
+                        value={r.model && r.model !== 'klasický' ? r.model : null}
+                        options={['Pro', 'Pro Max']}
+                        onSave={v => onUpdate(r.id, { model: v || null })}
+                      />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[85px]">
+                      <SelectCell
+                        value={r.velikost != null ? String(r.velikost) : null}
+                        options={['128', '256', '512']}
+                        suffix=" GB"
+                        onSave={v => onUpdate(r.id, { velikost: v ? Number(v) : null })}
+                      />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[110px]">
+                      <Cell value={r.barva} onSave={v => onUpdate(r.id, { barva: v ?? '' })} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[110px]">
+                      <Cell value={r.cena} type="number" step="1" onSave={v => onUpdate(r.id, { cena: v })} fmt={fmtCZK} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[110px]">
+                      <Cell value={(r.kusu || 0) * (r.cena || 0) || null} fmt={fmtCZK} readOnly />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[100px]">
+                      <SelectCell value={r.prodejce} options={['Tomáš']} onSave={v => onUpdate(r.id, { prodejce: v })} />
+                    </td>
+                    <td className="px-1 py-0.5 text-right">
+                      <button onClick={() => onDuplicate(r)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-accent transition-all p-1" title="Duplikovat">
+                        <Copy size={12} />
+                      </button>
+                    </td>
+                    <td className="px-2 py-0.5 text-right">
+                      <button onClick={() => onDelete(r.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all p-1" title="Smazat">
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Souhrnný řádek za den */}
+                <tr className="border-b border-border/30 bg-white/[0.025]">
+                  <td colSpan={6} className="px-5 py-2 text-xs text-muted font-medium">
+                    {fmtDate(datum)} · součet
+                  </td>
+                  <td className="px-3 py-2 font-mono text-sm text-white font-semibold whitespace-nowrap">
+                    {formatCZK(teorTotal)}
+                  </td>
+                  <td className="px-1 py-1 min-w-[130px]">
+                    <Cell
+                      value={celkovaCena}
+                      type="number"
+                      step="1"
+                      onSave={v => onUpdateBatch(dayItems.map(r => r.id), { celkova_cena: v })}
+                      fmt={fmtCZK}
+                      colorFn={() => 'text-success font-mono'}
+                    />
+                  </td>
+                  <td colSpan={3} className="px-3 py-2 whitespace-nowrap">
+                    {slevaPct != null && (
+                      <span className="font-mono text-sm text-yellow-400 font-semibold">
+                        −{slevaPct.toFixed(1)} %
+                        <span className="text-muted font-normal text-xs ml-1.5">({formatCZK(slevaKc)})</span>
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              </Fragment>
             )
           })}
         </tbody>
       </table>
       <button
-        onClick={() => onAdd(kategorie)}
+        onClick={() => onAdd('iphone')}
         className="w-full flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm border-t border-border/20 transition-colors"
       >
         <Plus size={13} /> Přidat prodej
@@ -271,248 +438,172 @@ function ProdejeTable({ kategorie, items, onUpdate, onDelete, onAdd }) {
   )
 }
 
-// ── Jedna denní roletka (kupóny NEBO nákupy) ────────────
-function KuponDayGroup({ datum, typ, items, isOpen, onToggle, onSave, onDelete, onAdd, onChangeDatum }) {
-  const [editDate, setEditDate] = useState(false)
-  const dateRef = useRef()
+// ── Prodeje (Elektronika) ────────────────────────────────
+function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
+  const fmtDate = v => v ? new Date(v + 'T12:00:00').toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) : null
+  const fmtCZK  = v => v != null ? formatCZK(v) : null
+  const fmtNum  = v => v != null ? String(v) : null
 
-  const isKupon   = typ === 'kupon'
-  const validCount = isKupon ? items.filter(k => !k.nefunguje).length : 0
-  const totalEur   = isKupon
-    ? validCount * KUPON_EUR
-    : items.reduce((s, n) => s + (n.castka || 0) * (n.kusu || 1) + (n.doprava || 0), 0)
-
-  const fmtDate = d => new Date(d + 'T12:00:00').toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' })
-  const fmtEur  = v => `€ ${Number(v).toFixed(2)}`
-
-  useEffect(() => { if (editDate) dateRef.current?.focus() }, [editDate])
-
-  function handleDateChange(e) {
-    const val = e.target.value
-    if (val && val !== datum) onChangeDatum(datum, typ, val)
-    setEditDate(false)
-  }
-
-  return (
-    <div className={`rounded-lg border overflow-hidden ${isKupon ? 'border-border' : 'border-danger/20'}`}>
-      {/* Hlavička */}
-      <div className={`flex items-center gap-3 px-4 py-3 ${isKupon ? 'bg-surface' : 'bg-red-500/[0.04]'}`}>
-        <button onClick={onToggle} className="text-muted shrink-0 hover:text-white transition-colors">
-          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        </button>
-
-        {/* Editovatelné datum */}
-        {editDate ? (
-          <input
-            ref={dateRef}
-            type="date"
-            defaultValue={datum}
-            onBlur={handleDateChange}
-            onKeyDown={e => { if (e.key === 'Escape') setEditDate(false); if (e.key === 'Enter') e.target.blur() }}
-            className="bg-bg border border-accent/60 rounded px-2 py-0.5 text-white text-sm outline-none"
-          />
-        ) : (
-          <button
-            onClick={e => { e.stopPropagation(); setEditDate(true) }}
-            className="text-white font-semibold text-sm hover:text-accent transition-colors"
-            title="Klikni pro změnu datumu"
-          >
-            {fmtDate(datum)}
-          </button>
-        )}
-
-        {isKupon
-          ? <span className="text-accent font-mono text-sm">{validCount} kódů</span>
-          : <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-danger/10 text-danger">Nákup</span>
-        }
-        <span className="flex-1" />
-        <span className={`font-mono text-sm font-semibold ${isKupon ? 'text-success' : 'text-danger'}`}>
-          {isKupon ? '' : '− '}{fmtEur(totalEur)}
-        </span>
-      </div>
-
-      {isOpen && (
-        <div className="border-t border-border/40">
-          {/* Kupóny */}
-          {isKupon && items.map(k => (
-            <div
-              key={k.id}
-              className={`flex items-center gap-2 px-4 py-1.5 border-b border-border/10 hover:bg-white/[0.02] group ${k.nefunguje ? 'opacity-40' : ''}`}
-            >
-              <div className="flex-1 min-w-0">
-                <Cell
-                  value={k.kod}
-                  onSave={v => onSave(k.id, { kod: v ?? '' })}
-                  colorFn={() => `font-mono text-xs ${k.nefunguje ? 'line-through text-muted' : 'text-white'}`}
-                />
-              </div>
-              <span className={`text-xs font-mono shrink-0 ${k.nefunguje ? 'text-danger' : 'text-success'}`}>
-                {k.nefunguje ? 'nefunguje' : `+ ${fmtEur(KUPON_EUR)}`}
-              </span>
-              <button
-                onClick={() => onSave(k.id, { nefunguje: !k.nefunguje })}
-                className="opacity-0 group-hover:opacity-100 text-xs text-muted hover:text-white transition-all px-1.5 py-0.5 rounded border border-border/40 hover:border-white/20"
-                title={k.nefunguje ? 'Označit jako funkční' : 'Označit jako nefunguje'}
-              >
-                {k.nefunguje ? '✓' : '✗'}
-              </button>
-              <button onClick={() => onDelete(k.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all p-1">
-                <Trash2 size={11} />
-              </button>
-            </div>
-          ))}
-
-          {/* Součet kupónů */}
-          {isKupon && (
-            <div className="flex items-center justify-between px-4 py-2 border-b border-border/20 bg-white/[0.02]">
-              <span className="text-xs text-muted">{validCount} × € {KUPON_EUR}</span>
-              <span className="text-sm font-mono font-bold text-success">= {fmtEur(totalEur)}</span>
-            </div>
-          )}
-
-          {/* Nákupy */}
-          {!isKupon && <NakupKuponyTable items={items} onSave={onSave} onDelete={onDelete} />}
-
-          {/* Přidat */}
-          <button
-            onClick={() => onAdd(typ, datum)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-muted hover:text-white hover:bg-white/5 text-xs border-t border-border/20 transition-colors"
-          >
-            <Plus size={12} /> {isKupon ? 'Přidat kupón' : 'Přidat nákup'}
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ── Kupony – celá sekce ─────────────────────────────────
-function KuponySection({ items, onSave, onDelete, onAdd, onChangeDatum }) {
-  const today = new Date().toISOString().slice(0, 10)
-  const [newGroupChoice, setNewGroupChoice] = useState(false)
-
-  // Seskupit dle datum+typ (kupóny a nákupy jsou samostatné skupiny)
+  // Seskupit dle datum DESC; uvnitř dne řadit dle cena ASC
   const groups = {}
-  items.forEach(i => {
-    const key = `${i.datum || today}__${i.typ}`
-    if (!groups[key]) groups[key] = { datum: i.datum || today, typ: i.typ, items: [] }
-    groups[key].items.push(i)
-  })
-  const sortedKeys = Object.keys(groups).sort((a, b) => {
-    const [dA] = a.split('__')
-    const [dB] = b.split('__')
-    return dB.localeCompare(dA)
-  })
-
-  const [open, setOpen] = useState(new Set(sortedKeys.slice(0, 1)))
-  function toggle(k) { setOpen(prev => { const n = new Set(prev); n.has(k) ? n.delete(k) : n.add(k); return n }) }
-  function ensureOpen(k) { setOpen(prev => new Set([...prev, k])) }
-
-  const totalBalance = items.reduce((s, i) => {
-    if (i.typ === 'kupon' && !i.nefunguje) return s + KUPON_EUR
-    if (i.typ === 'nakup') return s - (i.castka || 0) * (i.kusu || 1) - (i.doprava || 0)
-    return s
-  }, 0)
-
-  const validKupony = items.filter(i => i.typ === 'kupon' && !i.nefunguje).length
-  const nakupy      = items.filter(i => i.typ === 'nakup')
-
-  function handleNewGroup(typ) {
-    const key = `${today}__${typ}`
-    onAdd(typ, today)
-    ensureOpen(key)
-    setNewGroupChoice(false)
-  }
+  items.forEach(r => { const d = r.datum || ''; if (!groups[d]) groups[d] = []; groups[d].push(r) })
+  Object.values(groups).forEach(g => g.sort((a, b) => (a.cena ?? 0) - (b.cena ?? 0)))
+  const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
 
   return (
-    <div>
-      {/* Ministatistika */}
-      <div className="px-5 py-3 flex flex-wrap gap-5 border-b border-border/20 text-xs text-muted">
-        <span>Kupónů: <span className="text-white font-mono">{validKupony}</span></span>
-        <span>Celkem: <span className="text-accent font-mono">€ {(validKupony * KUPON_EUR).toFixed(2)}</span></span>
-        <span>Nákupy: <span className="text-danger font-mono">− € {nakupy.reduce((s, n) => s + (n.castka || 0) * (n.kusu || 1) + (n.doprava || 0), 0).toFixed(2)}</span></span>
-        <span>Zůstatek: <span className={`font-mono font-bold ${totalBalance < 0 ? 'text-danger' : 'text-success'}`}>€ {totalBalance.toFixed(2)}</span></span>
-        <span>Nefunguje: <span className="text-danger font-mono">{items.filter(i => i.typ === 'kupon' && i.nefunguje).length}</span></span>
-      </div>
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-border/30">
+            {['Datum', 'Název', 'Ks', 'Cena / ks', 'Celkem', 'Poznámka', 'Prodejce', ''].map((h, i) => (
+              <th key={i} className="text-left text-xs text-muted uppercase tracking-wider px-3 py-2 font-medium first:pl-5">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.length === 0 && (
+            <tr><td colSpan={7} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
+          )}
+          {sortedDates.map(datum => {
+            const dayItems    = groups[datum]
+            const teorTotal   = dayItems.reduce((s, r) => s + (r.kusu || 0) * (r.cena || 0), 0)
+            const celkovaCena = dayItems.find(r => r.celkova_cena != null)?.celkova_cena ?? null
+            const slevaKc     = celkovaCena != null && teorTotal > 0 ? teorTotal - celkovaCena : null
+            const slevaPct    = slevaKc != null && teorTotal > 0 ? slevaKc / teorTotal * 100 : null
 
-      {/* Skupiny */}
-      <div className="p-3 space-y-2">
-        {sortedKeys.map(key => {
-          const { datum, typ, items: groupItems } = groups[key]
-          return (
-            <KuponDayGroup
-              key={key}
-              datum={datum}
-              typ={typ}
-              items={groupItems}
-              isOpen={open.has(key)}
-              onToggle={() => toggle(key)}
-              onSave={onSave}
-              onDelete={onDelete}
-              onAdd={(t, d) => { onAdd(t, d); ensureOpen(`${d}__${t}`) }}
-              onChangeDatum={(oldD, t, newD) => { onChangeDatum(oldD, t, newD); ensureOpen(`${newD}__${t}`) }}
-            />
-          )
-        })}
-
-        {/* Nová skupina – výběr typu */}
-        {newGroupChoice ? (
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border/40 bg-white/[0.02]">
-            <span className="text-xs text-muted mr-1">Přidat (dnešní datum):</span>
-            <button onClick={() => handleNewGroup('kupon')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-accent/40 text-accent hover:bg-accent/10 text-xs transition-colors">
-              <Plus size={11} /> Kupón
-            </button>
-            <button onClick={() => handleNewGroup('nakup')} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-danger/40 text-danger hover:bg-red-500/10 text-xs transition-colors">
-              <Plus size={11} /> Nákup
-            </button>
-            <button onClick={() => setNewGroupChoice(false)} className="ml-auto text-muted hover:text-white text-xs px-2 py-1 transition-colors">Zrušit</button>
-          </div>
-        ) : (
-          <button onClick={() => setNewGroupChoice(true)} className="w-full flex items-center justify-center gap-2 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm rounded-lg border border-dashed border-border/40 hover:border-border transition-colors">
-            <Plus size={13} /> Přidat
-          </button>
-        )}
-      </div>
+            return (
+              <Fragment key={datum}>
+                {dayItems.map(r => (
+                  <tr key={r.id} className="border-b border-border/10 hover:bg-white/[0.025] group">
+                    <td className="px-1 py-0.5 pl-3 min-w-[110px]">
+                      <Cell value={r.datum} type="date" onSave={v => onUpdate(r.id, { datum: v })} fmt={fmtDate} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[160px]">
+                      <Cell value={r.nazev} onSave={v => onUpdate(r.id, { nazev: v ?? '' })} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[55px]">
+                      <Cell value={r.kusu} type="number" step="1" onSave={v => onUpdate(r.id, { kusu: v })} fmt={fmtNum} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[110px]">
+                      <Cell value={r.cena} type="number" step="1" onSave={v => onUpdate(r.id, { cena: v })} fmt={fmtCZK} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[110px]">
+                      <Cell value={(r.kusu || 0) * (r.cena || 0) || null} fmt={fmtCZK} readOnly />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[140px]">
+                      <Cell value={r.poznamka} onSave={v => onUpdate(r.id, { poznamka: v ?? '' })} />
+                    </td>
+                    <td className="px-1 py-0.5 min-w-[100px]">
+                      <SelectCell value={r.prodejce} options={['Tomáš']} onSave={v => onUpdate(r.id, { prodejce: v })} />
+                    </td>
+                    <td className="px-2 py-0.5 text-right">
+                      <button onClick={() => onDelete(r.id)} className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all p-1">
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {/* Souhrnný řádek za den */}
+                <tr className="border-b border-border/30 bg-white/[0.025]">
+                  <td colSpan={3} className="px-5 py-2 text-xs text-muted font-medium">
+                    {fmtDate(datum)} · součet
+                  </td>
+                  <td className="px-3 py-2 font-mono text-sm text-white font-semibold whitespace-nowrap">
+                    {formatCZK(teorTotal)}
+                  </td>
+                  <td className="px-1 py-1 min-w-[130px]">
+                    <Cell
+                      value={celkovaCena}
+                      type="number"
+                      step="1"
+                      onSave={v => onUpdateBatch(dayItems.map(r => r.id), { celkova_cena: v })}
+                      fmt={fmtCZK}
+                      colorFn={() => 'text-success font-mono'}
+                    />
+                  </td>
+                  <td colSpan={3} className="px-3 py-2 whitespace-nowrap">
+                    {slevaPct != null && (
+                      <span className="font-mono text-sm text-yellow-400 font-semibold">
+                        −{slevaPct.toFixed(1)} %
+                        <span className="text-muted font-normal text-xs ml-1.5">({formatCZK(slevaKc)})</span>
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+      <button
+        onClick={() => onAdd('elektronika')}
+        className="w-full flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm border-t border-border/20 transition-colors"
+      >
+        <Plus size={13} /> Přidat prodej
+      </button>
     </div>
   )
 }
 
 // ── Hlavní stránka ──────────────────────────────────────
 export default function Prodej() {
-  const [kupony,  setKupony]  = useState([])
   const [zasoby,  setZasoby]  = useState([])
   const [prodeje, setProdeje] = useState([])
 
   async function reload() {
-    const [k, z, p] = await Promise.all([loadKupony(), loadZasoby(), loadProdeje()])
-    setKupony(k)
+    const [z, p] = await Promise.all([loadZasoby(), loadProdeje()])
     setZasoby(z)
     setProdeje(p)
   }
   useEffect(() => { reload() }, [])
 
-  // ── Kupony ──
-  async function saveKupon(id, data)     { await updateKupon(id, data); await reload() }
-  async function delKupon(id)            { if (!confirm('Smazat?')) return; await deleteKupon(id); await reload() }
-  async function addKuponRow(typ, datum) {
-    if (typ === 'kupon') await addKupon({ datum, typ: 'kupon', kod: '', nefunguje: false, poznamka: '' })
-    else                 await addKupon({ datum, typ: 'nakup', nazev: '', kusu: null, castka: null, doprava: null, datumDodani: null, poznamka: '' })
-    await reload()
-  }
-  async function changeDatum(oldDatum, typ, newDatum) {
-    await Promise.all(kupony.filter(k => k.datum === oldDatum && k.typ === typ).map(k => updateKupon(k.id, { datum: newDatum })))
-    await reload()
-  }
-
   // ── Zásoby ──
   async function saveZasoba(id, data) { await updateZasoba(id, data); await reload() }
   async function delZasoba(id)  { if (!confirm('Smazat?')) return; await deleteZasoba(id); await reload() }
-  async function newZasoba(kat) { await addZasoba({ kategorie: kat, nazev: '', kusu: null, cenaNakup: null, cenaProdej: null, poznamka: '' }); await reload() }
+  async function newZasoba(kat) {
+    if (kat === 'iphone') {
+      await addZasoba({ kategorie: kat, kusu: null, typ: null, model: null, velikost: null, barva: '', cenaProdej: null })
+    } else {
+      await addZasoba({ kategorie: kat, nazev: '', kusu: null, cenaNakup: null, cenaProdej: null, poznamka: '' })
+    }
+    await reload()
+  }
 
   // ── Prodeje ──
   async function saveProdej(id, data) { await updateProdej(id, data); await reload() }
+  async function batchSaveProdej(ids, data) { await Promise.all(ids.map(id => updateProdej(id, data))); await reload() }
   async function delProdej(id)  { if (!confirm('Smazat?')) return; await deleteProdej(id); await reload() }
-  async function newProdej(kat) { await addProdej({ datum: new Date().toISOString().slice(0, 10), kategorie: kat, nazev: '', kusu: null, cena: null, poznamka: '' }); await reload() }
+  async function dupProdej(r)   { const { id, createdAt, ...rest } = r; await addProdej(rest); await reload() }
+  async function newProdej(kat) {
+    const base = { datum: new Date().toISOString().slice(0, 10), kategorie: kat, kusu: null, cena: null, poznamka: '' }
+    if (kat === 'iphone') {
+      await addProdej({ ...base, typ: null, model: null, velikost: null, barva: '', celkova_cena: null })
+    } else {
+      await addProdej({ ...base, nazev: '' })
+    }
+    await reload()
+  }
+
+  async function transferToProdej(ids) {
+    const today = new Date().toISOString().slice(0, 10)
+    const toTransfer = iPhoneZasoby.filter(z => ids.has(z.id))
+    await Promise.all(toTransfer.map(z =>
+      addProdej({
+        datum: today,
+        kategorie: 'iphone',
+        kusu: z.kusu,
+        cena: z.cenaProdej,
+        typ: z.typ,
+        model: z.model,
+        velikost: z.velikost,
+        barva: z.barva,
+        celkova_cena: null,
+        poznamka: '',
+      })
+    ))
+    await Promise.all(toTransfer.map(z => deleteZasoba(z.id)))
+    await reload()
+  }
 
   // ── Výpočty ──
   const iPhoneProdeje = prodeje.filter(p => p.kategorie === 'iphone')
@@ -523,12 +614,11 @@ export default function Prodej() {
   const calcProvize = (list, sazba) =>
     list.reduce((s, r) => s + Math.round((r.kusu || 0) * (r.cena || 0) * sazba), 0)
 
-  const provizeIphone = calcProvize(iPhoneProdeje, PROVIZE_SAZBY.iphone)
+  const provizeIphone = iPhoneProdeje.reduce((s, r) => {
+    const sazba = r.typ === '17' ? 0.05 : 0.10
+    return s + Math.round((r.kusu || 0) * (r.cena || 0) * sazba)
+  }, 0)
   const provizeElek   = calcProvize(elekProdeje,   PROVIZE_SAZBY.elektronika)
-
-  const validKupony  = kupony.filter(k => k.typ === 'kupon' && !k.nefunguje).length
-  const totalNakupy  = kupony.filter(k => k.typ === 'nakup').reduce((s, n) => s + (n.castka || 0) * (n.kusu || 1) + (n.doprava || 0), 0)
-  const zustatekEur  = validKupony * KUPON_EUR - totalNakupy
 
   const dispIphone = iPhoneZasoby.reduce((s, z) => s + (z.kusu || 0), 0)
   const dispElek   = elekZasoby.reduce((s, z) => s + (z.kusu || 0), 0)
@@ -537,15 +627,15 @@ export default function Prodej() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Prodej</h1>
-        <p className="text-muted text-sm mt-0.5">Elektronika · iPhony · Amazon kupony</p>
+        <p className="text-muted text-sm mt-0.5">Elektronika · iPhony</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div className="card">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">Provize iPhone</p>
           <p className="text-2xl font-bold font-mono text-accent">{formatCZK(provizeIphone)}</p>
-          <p className="text-xs text-muted mt-0.5">sazba 5 %</p>
+          <p className="text-xs text-muted mt-0.5">16→10 % · 17→5 %</p>
         </div>
         <div className="card">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">Provize elektronika</p>
@@ -561,22 +651,15 @@ export default function Prodej() {
             {dispIphone === 0 && dispElek === 0 ? <span className="text-muted">–</span> : null}
           </p>
         </div>
-        <div className="card">
-          <p className="text-xs text-muted uppercase tracking-wider mb-1">Kupony – zůstatek</p>
-          <p className={`text-2xl font-bold font-mono ${zustatekEur < 0 ? 'text-danger' : 'text-success'}`}>
-            € {zustatekEur.toFixed(2)}
-          </p>
-          <p className="text-xs text-muted mt-0.5">{validKupony} aktivních</p>
-        </div>
       </div>
 
       {/* iPhony */}
       <Section title="iPhony" icon={Smartphone} color="text-accent">
         <SubSection title="K dispozici">
-          <ZasobyTable kategorie="iphone" items={iPhoneZasoby} onUpdate={saveZasoba} onDelete={delZasoba} onAdd={newZasoba} />
+          <IPhonyZasobyTable items={iPhoneZasoby} onUpdate={saveZasoba} onDelete={delZasoba} onAdd={newZasoba} onTransfer={transferToProdej} />
         </SubSection>
         <SubSection title="Historie prodejů">
-          <ProdejeTable kategorie="iphone" items={iPhoneProdeje} onUpdate={saveProdej} onDelete={delProdej} onAdd={newProdej} />
+          <IPhonyProdejeTable items={iPhoneProdeje} onUpdate={saveProdej} onUpdateBatch={batchSaveProdej} onDelete={delProdej} onAdd={newProdej} onDuplicate={dupProdej} />
         </SubSection>
       </Section>
 
@@ -586,14 +669,10 @@ export default function Prodej() {
           <ZasobyTable kategorie="elektronika" items={elekZasoby} onUpdate={saveZasoba} onDelete={delZasoba} onAdd={newZasoba} />
         </SubSection>
         <SubSection title="Historie prodejů">
-          <ProdejeTable kategorie="elektronika" items={elekProdeje} onUpdate={saveProdej} onDelete={delProdej} onAdd={newProdej} />
+          <ProdejeTable items={elekProdeje} onUpdate={saveProdej} onUpdateBatch={batchSaveProdej} onDelete={delProdej} onAdd={newProdej} />
         </SubSection>
       </Section>
 
-      {/* Amazon kupony */}
-      <Section title="Amazon kupony" icon={Tag} color="text-yellow-400" defaultOpen={false}>
-        <KuponySection items={kupony} onSave={saveKupon} onDelete={delKupon} onAdd={addKuponRow} onChangeDatum={changeDatum} />
-      </Section>
     </div>
   )
 }

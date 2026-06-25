@@ -1,29 +1,27 @@
-import { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
-import { Layers, BarChart2, Clock, ShoppingBag, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
+import { Layers, BarChart2, ShoppingBag, List, Plus, PanelLeftClose, PanelLeftOpen, LogOut, Tag, Brain } from 'lucide-react'
+import { useAuth } from '../lib/auth.jsx'
+
+const links = [
+  { to: '/projekty',  label: 'Projekty',   icon: Layers },
+  { to: '/vyrovnani', label: 'Vyrovnání',  icon: BarChart2 },
+  { to: '/prodej',          label: 'Prodej',          icon: ShoppingBag },
+  { to: '/amazon-poukazy', label: 'Amazon poukazy',  icon: Tag },
+  { to: '/myslenky',       label: 'Myšlenky',        icon: Brain },
+  { to: '/zaznamy',        label: 'Záznamy',         icon: List },
+  { to: '/pridat',   label: 'Přidat',     icon: Plus },
+]
 
 export default function Navbar({ isOpen, onToggle }) {
-  const [vyrovnaniOpen, setVyrovnaniOpen] = useState(true)
-  const location = useLocation()
-  const inVyrovnani = location.pathname === '/vyrovnani' || location.pathname === '/prodej'
+  const { signOut } = useAuth()
 
   const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-      isActive
-        ? 'bg-accent/10 text-accent font-medium'
-        : 'text-muted hover:text-white hover:bg-white/5'
-    }`
-
-  const subLinkClass = ({ isActive }) =>
-    `flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-all ${
-      isActive
-        ? 'bg-accent/10 text-accent font-medium'
-        : 'text-muted hover:text-white hover:bg-white/5'
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+      isActive ? 'bg-accent/10 text-accent font-medium' : 'text-muted hover:text-white hover:bg-white/5'
     }`
 
   return (
     <>
-      {/* Toggle tlačítko — vždy viditelné */}
       <button
         onClick={onToggle}
         title={isOpen ? 'Skrýt lištu' : 'Zobrazit lištu'}
@@ -34,53 +32,31 @@ export default function Navbar({ isOpen, onToggle }) {
         {isOpen ? <PanelLeftClose size={14} /> : <PanelLeftOpen size={14} />}
       </button>
 
-      {/* Samotná lišta */}
       {isOpen && (
-        <aside className="fixed left-0 top-0 h-full w-56 bg-surface border-r border-border flex flex-col z-40 transition-all duration-200">
-          {/* Logo */}
+        <aside className="fixed left-0 top-0 h-full w-56 bg-surface border-r border-border flex flex-col z-40">
           <div className="px-6 py-5 border-b border-border">
             <span className="text-accent font-mono font-bold text-sm tracking-tight leading-tight block">PROJEKTY &amp;</span>
             <span className="text-white font-mono font-bold text-sm tracking-tight">VYROVNÁNÍ</span>
             <p className="text-muted text-xs mt-1">Tomáš – přehled práce</p>
           </div>
 
-          <nav className="flex-1 px-3 py-4 space-y-0.5">
-            {/* Projekty */}
-            <NavLink to="/projekty" className={linkClass}>
-              <Layers size={16} />
-              Projekty
-            </NavLink>
-
-            {/* Vyrovnání sekce */}
-            <div>
-              <button
-                onClick={() => setVyrovnaniOpen(o => !o)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                  inVyrovnani ? 'text-white font-medium' : 'text-muted hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <BarChart2 size={16} />
-                <span className="flex-1 text-left">Vyrovnání</span>
-                {vyrovnaniOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-              </button>
-
-              {vyrovnaniOpen && (
-                <div className="ml-3 mt-0.5 space-y-0.5 border-l border-border/40 pl-3">
-                  <NavLink to="/vyrovnani" className={subLinkClass}>
-                    <Clock size={14} />
-                    Hodiny
-                  </NavLink>
-                  <NavLink to="/prodej" className={subLinkClass}>
-                    <ShoppingBag size={14} />
-                    Prodej
-                  </NavLink>
-                </div>
-              )}
-            </div>
+          <nav className="flex-1 px-3 py-4 space-y-1">
+            {links.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to} className={linkClass}>
+                <Icon size={16} />
+                {label}
+              </NavLink>
+            ))}
           </nav>
 
-          <div className="px-6 py-4 border-t border-border">
-            <p className="text-muted text-xs">v1.0 · 2026</p>
+          <div className="px-3 py-3 border-t border-border">
+            <button
+              onClick={signOut}
+              className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-muted hover:text-white hover:bg-white/5 transition-all"
+            >
+              <LogOut size={14} />
+              Odhlásit se
+            </button>
           </div>
         </aside>
       )}

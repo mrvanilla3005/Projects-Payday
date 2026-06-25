@@ -1,0 +1,15 @@
+# Dependencies
+node_modules
+
+# Environment variables - NIKDY nenahrávat na GitHub!
+.env
+.env.local
+
+# Build
+dist
+
+# Vite
+*.local
+
+# Editor
+.vscode

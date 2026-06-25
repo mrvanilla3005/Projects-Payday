@@ -37,20 +37,34 @@ export default function PridatZaznam() {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    const record = {
+    const mesic = parseInt(form.mesic)
+    const rok   = parseInt(form.rok)
+    let record = {
       ...form,
       hodiny: form.hodiny !== '' ? parseFloat(form.hodiny) : null,
       sum: form.sum !== '' ? parseFloat(form.sum) : null,
       paid: form.paid !== '' ? parseFloat(form.paid) : null,
       difference: form.difference !== '' ? parseFloat(form.difference) : null,
-      mesic: parseInt(form.mesic),
-      rok: parseInt(form.rok),
+      mesic,
+      rok,
+    }
+    if (form.typ === 'kvartal_bonus') {
+      const lastDay = new Date(rok, mesic, 0).getDate()
+      const quarter = Math.ceil(mesic / 3)
+      record = {
+        ...record,
+        datum: `${rok}-${String(mesic).padStart(2, '0')}-${lastDay}`,
+        projekt: 'Kvartální bonus',
+        aktivita: `Q${quarter} ${rok}`,
+        sum: 15000,
+        paid: null,
+        difference: null,
+        hodiny: null,
+      }
     }
     await addRecord(record)
     setSaved(true)
-    setTimeout(() => {
-      navigate('/zaznamy')
-    }, 1200)
+    setTimeout(() => { navigate('/zaznamy') }, 1200)
   }
 
   function isHodiny() { return form.typ === 'hodiny' }
@@ -95,127 +109,160 @@ export default function PridatZaznam() {
           </div>
         </div>
 
-        {/* Datum */}
-        <div>
-          <label className="label">Datum *</label>
-          <input
-            type="date"
-            value={form.datum}
-            onChange={handleDatumChange}
-            required
-            className="input"
-          />
-          <p className="text-xs text-muted mt-1">
-            Měsíc a rok se vyplní automaticky: {MONTHS[form.mesic - 1]} {form.rok}
-          </p>
-        </div>
-
-        {/* Projekt */}
-        <div>
-          <label className="label">Projekt *</label>
-          <select
-            value={form.projekt}
-            onChange={e => set('projekt', e.target.value)}
-            required
-            className="input"
-          >
-            <option value="">Vyber projekt...</option>
-            {PROJECTS.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
-        </div>
-
-        {/* Aktivita */}
-        <div>
-          <label className="label">Aktivita / popis *</label>
-          <input
-            type="text"
-            value={form.aktivita}
-            onChange={e => set('aktivita', e.target.value)}
-            required
-            placeholder="Co bylo děláno..."
-            className="input"
-          />
-        </div>
-
-        {/* Hodiny */}
-        {isHodiny() && (
+        {/* Kvartální bonus – zjednodušený formulář */}
+        {form.typ === 'kvartal_bonus' ? (
           <div>
-            <label className="label">Počet hodin *</label>
-            <input
-              type="number"
-              step="0.5"
-              min="0"
-              value={form.hodiny}
-              onChange={e => set('hodiny', e.target.value)}
-              required={isHodiny()}
-              placeholder="0.5"
-              className="input"
-            />
+            <label className="label">Měsíc *</label>
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={form.mesic}
+                onChange={e => set('mesic', parseInt(e.target.value))}
+                className="input"
+              >
+                {MONTHS.map((m, i) => (
+                  <option key={i} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={form.rok}
+                onChange={e => set('rok', parseInt(e.target.value))}
+                className="input"
+              >
+                {[2025, 2026, 2027, 2028].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-muted mt-2">Částka 15 000 Kč se doplní automaticky.</p>
           </div>
-        )}
-
-        {/* Finanční pole */}
-        {isFinancial() && (
-          <div className="grid grid-cols-3 gap-3">
+        ) : (
+          <>
+            {/* Datum */}
             <div>
-              <label className="label">SUM (CZK)</label>
+              <label className="label">Datum *</label>
               <input
-                type="number"
-                value={form.sum}
-                onChange={e => set('sum', e.target.value)}
-                placeholder="0"
+                type="date"
+                value={form.datum}
+                onChange={handleDatumChange}
+                required
+                className="input"
+              />
+              <p className="text-xs text-muted mt-1">
+                Měsíc a rok se vyplní automaticky: {MONTHS[form.mesic - 1]} {form.rok}
+              </p>
+            </div>
+
+            {/* Projekt – jen u Podílu z prodeje */}
+            {form.typ === 'podil_prodej' && (
+              <div>
+                <label className="label">Projekt *</label>
+                <select
+                  value={form.projekt}
+                  onChange={e => set('projekt', e.target.value)}
+                  required
+                  className="input"
+                >
+                  <option value="">Vyber...</option>
+                  <option value="iPhony">iPhony</option>
+                  <option value="Elektronika">Elektronika</option>
+                </select>
+              </div>
+            )}
+
+            {/* Aktivita */}
+            <div>
+              <label className="label">Aktivita / popis *</label>
+              <input
+                type="text"
+                value={form.aktivita}
+                onChange={e => set('aktivita', e.target.value)}
+                required
+                placeholder="Co bylo děláno..."
                 className="input"
               />
             </div>
+
+            {/* Hodiny */}
+            {isHodiny() && (
+              <div>
+                <label className="label">Počet hodin *</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  value={form.hodiny}
+                  onChange={e => set('hodiny', e.target.value)}
+                  required={isHodiny()}
+                  placeholder="0.5"
+                  className="input"
+                />
+              </div>
+            )}
+
+            {/* Finanční pole */}
+            {isFinancial() && (
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="label">SUM (CZK)</label>
+                  <input
+                    type="number"
+                    value={form.sum}
+                    onChange={e => set('sum', e.target.value)}
+                    placeholder="0"
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">PAID (CZK)</label>
+                  <input
+                    type="number"
+                    value={form.paid}
+                    onChange={e => set('paid', e.target.value)}
+                    placeholder="0"
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">Difference</label>
+                  <input
+                    type="number"
+                    value={form.difference}
+                    onChange={e => set('difference', e.target.value)}
+                    placeholder="0"
+                    className="input"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Vyrovnání – hodiny */}
+            {form.typ === 'vyrovnani' && (
+              <div>
+                <label className="label">Odprac. hodin (pro toto období)</label>
+                <input
+                  type="number"
+                  step="0.5"
+                  value={form.hodiny}
+                  onChange={e => set('hodiny', e.target.value)}
+                  placeholder="0"
+                  className="input"
+                />
+              </div>
+            )}
+
+            {/* Poznámka */}
             <div>
-              <label className="label">PAID (CZK)</label>
+              <label className="label">Poznámka</label>
               <input
-                type="number"
-                value={form.paid}
-                onChange={e => set('paid', e.target.value)}
-                placeholder="0"
+                type="text"
+                value={form.poznamka}
+                onChange={e => set('poznamka', e.target.value)}
+                placeholder="Volitelná poznámka..."
                 className="input"
               />
             </div>
-            <div>
-              <label className="label">Difference</label>
-              <input
-                type="number"
-                value={form.difference}
-                onChange={e => set('difference', e.target.value)}
-                placeholder="0"
-                className="input"
-              />
-            </div>
-          </div>
+          </>
         )}
-
-        {/* Vyrovnání – hodiny */}
-        {form.typ === 'vyrovnani' && (
-          <div>
-            <label className="label">Odprac. hodin (pro toto období)</label>
-            <input
-              type="number"
-              step="0.5"
-              value={form.hodiny}
-              onChange={e => set('hodiny', e.target.value)}
-              placeholder="0"
-              className="input"
-            />
-          </div>
-        )}
-
-        {/* Poznámka */}
-        <div>
-          <label className="label">Poznámka</label>
-          <input
-            type="text"
-            value={form.poznamka}
-            onChange={e => set('poznamka', e.target.value)}
-            placeholder="Volitelná poznámka..."
-            className="input"
-          />
-        </div>
 
         {/* Akce */}
         <div className="flex gap-3 pt-2">
