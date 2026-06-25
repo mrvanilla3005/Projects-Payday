@@ -26,63 +26,42 @@ export default function Myslenky() {
     }
   }, [])
 
-  function buildRecognition(accumulatedRef) {
+  function startListening() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) return null
+    if (!SR) return
     const recognition = new SR()
     recognition.lang = 'cs-CZ'
-    recognition.continuous = true
+    recognition.continuous = false
     recognition.interimResults = true
+
+    let finalText = ''
 
     recognition.onresult = (e) => {
       let final = ''
       let inter = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
+      for (let i = 0; i < e.results.length; i++) {
         if (e.results[i].isFinal) final += e.results[i][0].transcript
         else inter += e.results[i][0].transcript
       }
-      if (final) {
-        accumulatedRef.current += (accumulatedRef.current ? ' ' : '') + final.trim()
-        setTranscript(accumulatedRef.current)
-      }
-      setInterim(inter)
+      finalText = final
+      setInterim(inter || final)
     }
 
     recognition.onend = () => {
-      // iOS Safari zastaví recognition po pauze – restartujeme pokud stále posloucháme
-      if (listeningRef.current) {
-        try { recognition.start() } catch {}
-      } else {
-        setListening(false)
-        setInterim('')
-      }
-    }
-
-    recognition.onerror = (e) => {
-      if (e.error === 'aborted') return
-      listeningRef.current = false
-      setListening(false)
+      if (finalText) setTranscript(prev => prev + (prev ? ' ' : '') + finalText.trim())
       setInterim('')
+      setListening(false)
     }
 
-    return recognition
-  }
+    recognition.onerror = () => { setListening(false); setInterim('') }
 
-  function startListening() {
-    const accumulatedRef = { current: transcript }
-    const recognition = buildRecognition(accumulatedRef)
-    if (!recognition) return
-    listeningRef.current = true
-    recognitionRef.current = recognition
     recognition.start()
+    recognitionRef.current = recognition
     setListening(true)
   }
 
   function stopListening() {
-    listeningRef.current = false
     recognitionRef.current?.stop()
-    setListening(false)
-    setInterim('')
   }
 
   async function save() {
