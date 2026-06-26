@@ -372,9 +372,13 @@ export default function Vyrovnani() {
   const nevyrH    = nevyrHodiny.reduce((s, r) => s + (r.hodiny || 0), 0)
   const nevyrHKc  = nevyrHodiny.reduce((s, r) => s + (r.hodiny || 0) * getHourlyRate(r.datum), 0)
 
-  const nevyrBonusy = records.filter(r =>
-    r.typ === 'kvartal_bonus' && r.datum && (!lastSettledDate || r.datum > lastSettledDate)
-  )
+  const nevyrBonusy = records.filter(r => {
+    if (r.typ !== 'kvartal_bonus' || !r.datum) return false
+    if (!lastSettledDate) return true
+    // Bonus is settled if its month has started before or on the settlement date
+    const bonusMonthStart = r.datum.slice(0, 7) + '-01'
+    return bonusMonthStart > lastSettledDate.slice(0, 10)
+  })
   const nevyrBonusKc = nevyrBonusy.reduce((s, r) => s + (r.sum || 0), 0)
 
   const nevyrProdeje = prodeje.filter(p => p.datum && (!lastSettledDate || p.datum > lastSettledDate))

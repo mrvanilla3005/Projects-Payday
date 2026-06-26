@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './lib/auth.jsx'
 import Navbar from './components/Navbar.jsx'
 import Login from './pages/Login.jsx'
+import SetPassword from './pages/SetPassword.jsx'
 import AmazonPoukazy from './pages/AmazonPoukazy.jsx'
 import Myslenky from './pages/Myslenky.jsx'
 import Projekty from './pages/Projekty.jsx'
@@ -12,7 +13,7 @@ import PridatZaznam from './pages/PridatZaznam.jsx'
 import Zaznamy from './pages/Zaznamy.jsx'
 
 function ProtectedApp() {
-  const { session } = useAuth()
+  const { session, needsPasswordReset, clearPasswordReset } = useAuth()
   const [navOpen, setNavOpen] = useState(() => window.innerWidth >= 768)
 
   if (session === undefined) {
@@ -24,6 +25,7 @@ function ProtectedApp() {
   }
 
   if (!session) return <Login />
+  if (needsPasswordReset) return <SetPassword onDone={clearPasswordReset} />
 
   return (
     <div className="min-h-screen bg-bg flex">

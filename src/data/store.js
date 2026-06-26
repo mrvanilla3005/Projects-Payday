@@ -241,13 +241,12 @@ export function getHourlyRate(datum) {
 
 // ── DNA Records ───────────────────────────────────
 export const DNA_TOPICS = [
-  { id: 'byt',         label: 'Byt',         sub: 'Centropolis', dot: 'bg-yellow-400'  },
-  { id: 'dum',         label: 'Dům',         sub: 'Těchov',      dot: 'bg-green-400'   },
-  { id: 'fg',          label: 'FG',          sub: '',            dot: 'bg-purple-400'  },
-  { id: 'ig',          label: 'IG',          sub: 'Instagram',   dot: 'bg-pink-400'    },
-  { id: 'elektronika', label: 'Electronics', sub: '',            dot: 'bg-blue-400'    },
-  { id: 'email',       label: 'Email',       sub: '',            dot: 'bg-orange-400'  },
-  { id: 'ostatni',     label: 'Ostatní',     sub: '',            dot: 'bg-white/30'    },
+  { id: 'byt',     label: 'Centropolis', sub: '', dot: 'bg-yellow-400' },
+  { id: 'dum',     label: 'Těchov',      sub: '', dot: 'bg-green-400'  },
+  { id: 'fg',      label: 'FG',          sub: '', dot: 'bg-purple-400' },
+  { id: 'ig',      label: 'IG',          sub: 'Instagram', dot: 'bg-pink-400' },
+  { id: 'email',   label: 'Email',       sub: '', dot: 'bg-orange-400' },
+  { id: 'ostatni', label: 'Ostatní',     sub: '', dot: 'bg-white/30'   },
 ]
 
 export const DNA_DTA = [
@@ -268,82 +267,44 @@ export const deleteDna = id       => dnaStore.remove(id)
 const thoughtsStore = _sb('thoughts')
 export const loadThoughts   = ()       => thoughtsStore.load()
 export const addThought     = d        => thoughtsStore.add(d)
+export const updateThought  = (id, d)  => thoughtsStore.update(id, d)
 export const deleteThought  = id       => thoughtsStore.remove(id)
 
 const summariesStore = _sb('summaries')
 export const loadSummaries  = ()       => summariesStore.load()
 export const addSummary     = d        => summariesStore.add(d)
 
-// ── PROJEKTY & ÚKOLY ──────────────────────────
+// ── Storage: Přílohy ──────────────────────────
 
-const PROJECTS_KEY = 'projekty'
-const TASKS_KEY = 'ukoly'
+const BUCKET = 'attachments'
 
-export const PROJECT_STATUSES = ['Nezahájeno', 'Probíhá', 'Hotovo']
-
-export const STATUS_COLORS = {
-  Nezahájeno: 'bg-muted/10 text-muted',
-  Probíhá:    'bg-accent/10 text-accent',
-  Hotovo:     'bg-success/10 text-success',
+export async function uploadAttachment(storagePath, file) {
+  const { error } = await supabase.storage.from(BUCKET).upload(storagePath, file)
+  if (error) { console.error('uploadAttachment:', error); return null }
+  return storagePath
 }
 
-export function loadProjects() {
-  try { return JSON.parse(localStorage.getItem(PROJECTS_KEY) || '[]') }
-  catch { return [] }
+export function getAttachmentUrl(storagePath) {
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+  return data.publicUrl
 }
 
-function _saveProjects(list) {
-  localStorage.setItem(PROJECTS_KEY, JSON.stringify(list))
+export async function deleteAttachment(storagePath) {
+  const { error } = await supabase.storage.from(BUCKET).remove([storagePath])
+  if (error) console.error('deleteAttachment:', error)
 }
 
-export function addProject(data) {
-  const list = loadProjects()
-  const item = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
-  list.unshift(item)
-  _saveProjects(list)
-  return item
-}
+// ── PROJEKTY & ÚKOLY (Supabase) ───────────────
 
-export function updateProject(id, data) {
-  const list = loadProjects()
-  const idx = list.findIndex(p => p.id === id)
-  if (idx === -1) return null
-  list[idx] = { ...list[idx], ...data }
-  _saveProjects(list)
-  return list[idx]
-}
+const projectsDb = _sb('projects')
+const tasksDb    = _sb('tasks')
 
-export function deleteProject(id) {
-  _saveProjects(loadProjects().filter(p => p.id !== id))
-  _saveTasks(loadTasks().filter(t => t.projektId !== id))
-}
+export const loadProjects  = ()       => projectsDb.load()
+export const addProject    = d        => projectsDb.add(d)
+export const updateProject = (id, d)  => projectsDb.update(id, d)
+export const deleteProject = id       => projectsDb.remove(id)
 
-export function loadTasks() {
-  try { return JSON.parse(localStorage.getItem(TASKS_KEY) || '[]') }
-  catch { return [] }
-}
-
-function _saveTasks(list) {
-  localStorage.setItem(TASKS_KEY, JSON.stringify(list))
-}
-
-export function addTask(data) {
-  const list = loadTasks()
-  const item = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
-  list.push(item)
-  _saveTasks(list)
-  return item
-}
-
-export function updateTask(id, data) {
-  const list = loadTasks()
-  const idx = list.findIndex(t => t.id === id)
-  if (idx === -1) return null
-  list[idx] = { ...list[idx], ...data }
-  _saveTasks(list)
-  return list[idx]
-}
-
-export function deleteTask(id) {
-  _saveTasks(loadTasks().filter(t => t.id !== id))
-}
+export const loadTasks     = ()       => tasksDb.load()
+export const addTask       = d        => tasksDb.add(d)
+export const updateTask    = (id, d)  => tasksDb.update(id, d)
+export const deleteTask    = id       => tasksDb.remove(id)
