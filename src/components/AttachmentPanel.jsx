@@ -17,6 +17,9 @@ function fileIcon(mime = '', name = '') {
   return '📎'
 }
 
+const PANEL_W = 288
+const MARGIN  = 8
+
 export default function AttachmentPanel({ attachments = [], storagePath, onSave }) {
   const [open, setOpen]           = useState(false)
   const [tab, setTab]             = useState('files')
@@ -36,16 +39,29 @@ export default function AttachmentPanel({ attachments = [], storagePath, onSave 
       setOpen(false)
     }
     document.addEventListener('mousedown', outside)
-    return () => document.removeEventListener('mousedown', outside)
+    document.addEventListener('touchstart', outside, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', outside)
+      document.removeEventListener('touchstart', outside)
+    }
   }, [open])
 
   function toggle() {
     if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect()
-      setPos({
-        top:  r.bottom + window.scrollY + 4,
-        left: Math.min(r.right + window.scrollX - 288, window.innerWidth - 296),
-      })
+      const r   = btnRef.current.getBoundingClientRect()
+      const top = r.bottom + window.scrollY + 4
+
+      let left
+      if (window.innerWidth < 520) {
+        // Na mobilu vycentrovat
+        left = (window.innerWidth - PANEL_W) / 2
+      } else {
+        left = r.right + window.scrollX - PANEL_W
+        left = Math.min(left, window.innerWidth - PANEL_W - MARGIN)
+        left = Math.max(MARGIN, left)
+      }
+
+      setPos({ top, left })
     }
     setOpen(o => !o)
   }
@@ -84,7 +100,7 @@ export default function AttachmentPanel({ attachments = [], storagePath, onSave 
   const dropdown = open && createPortal(
     <div
       id="att-panel-portal"
-      style={{ position: 'absolute', top: pos.top, left: pos.left, zIndex: 9999, width: 288 }}
+      style={{ position: 'absolute', top: pos.top, left: pos.left, zIndex: 9999, width: PANEL_W }}
       className="bg-surface border border-border rounded-xl shadow-2xl overflow-hidden"
     >
       {count > 0 && (
@@ -108,7 +124,7 @@ export default function AttachmentPanel({ attachments = [], storagePath, onSave 
                 <span className="text-xs text-muted/60 font-mono shrink-0">{fmtSize(a.size)}</span>
               )}
               <button type="button" onClick={() => remove(a)}
-                className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all shrink-0 p-0.5">
+                className="text-muted hover:text-danger transition-all shrink-0 p-1.5">
                 <X size={11} />
               </button>
             </div>
@@ -119,26 +135,32 @@ export default function AttachmentPanel({ attachments = [], storagePath, onSave 
       <div className="p-3 space-y-2">
         <div className="flex gap-1">
           <button type="button" onClick={() => setTab('files')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs border transition-colors ${tab === 'files' ? 'bg-white/10 border-white/20 text-white' : 'border-border/30 text-muted hover:text-white'}`}>
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs border transition-colors ${tab === 'files' ? 'bg-white/10 border-white/20 text-white' : 'border-border/30 text-muted hover:text-white'}`}>
             <Upload size={11} /> Soubor / obrázek
           </button>
           <button type="button" onClick={() => setTab('url')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs border transition-colors ${tab === 'url' ? 'bg-white/10 border-white/20 text-white' : 'border-border/30 text-muted hover:text-white'}`}>
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs border transition-colors ${tab === 'url' ? 'bg-white/10 border-white/20 text-white' : 'border-border/30 text-muted hover:text-white'}`}>
             <Link size={11} /> URL odkaz
           </button>
         </div>
 
         {tab === 'files' && (
-          <div onDragOver={e => e.preventDefault()}
+          <label
+            onDragOver={e => e.preventDefault()}
             onDrop={e => { e.preventDefault(); upload(e.dataTransfer.files) }}
-            onClick={() => fileRef.current?.click()}
-            className="border border-dashed border-border/40 rounded-lg py-4 px-3 text-center cursor-pointer hover:border-white/30 hover:bg-white/5 transition-colors">
+            className="block border border-dashed border-border/40 rounded-lg py-5 px-3 text-center cursor-pointer hover:border-white/30 hover:bg-white/5 transition-colors"
+          >
             {uploading
               ? <p className="text-xs text-muted">Nahrávám…</p>
-              : <p className="text-xs text-muted">Přetáhni nebo klikni pro přidání</p>}
-            <input ref={fileRef} type="file" multiple className="hidden"
-              onChange={e => { upload(e.target.files); e.target.value = '' }} />
-          </div>
+              : <p className="text-xs text-muted">Přetáhni nebo klikni pro výběr souboru</p>}
+            <input
+              ref={fileRef}
+              type="file"
+              multiple
+              style={{ position: 'absolute', opacity: 0, width: '1px', height: '1px', overflow: 'hidden' }}
+              onChange={e => { upload(e.target.files); e.target.value = '' }}
+            />
+          </label>
         )}
 
         {tab === 'url' && (
