@@ -35,9 +35,8 @@ export default function Navbar({ isOpen, onToggle }) {
       {isOpen && (
         <aside className="fixed left-0 top-0 h-full w-56 bg-surface border-r border-border flex flex-col z-40">
           <div className="px-6 py-5 border-b border-border">
-            <span className="text-accent font-mono font-bold text-sm tracking-tight leading-tight block">PROJEKTY &amp;</span>
-            <span className="text-white font-mono font-bold text-sm tracking-tight">VYROVNÁNÍ</span>
-            <p className="text-muted text-xs mt-1">Tomáš – přehled práce</p>
+            <span className="text-accent font-mono font-bold text-base tracking-tight leading-tight block">PROJEKTY &amp;</span>
+            <span className="text-white font-mono font-bold text-base tracking-tight">VYROVNÁNÍ</span>
           </div>
 
           <nav className="flex-1 px-3 py-4 space-y-1">
