@@ -10,7 +10,6 @@ import Projekty from './pages/Projekty.jsx'
 import Vyrovnani from './pages/Vyrovnani.jsx'
 import Prodej from './pages/Prodej.jsx'
 import PridatZaznam from './pages/PridatZaznam.jsx'
-import Zaznamy from './pages/Zaznamy.jsx'
 
 function ProtectedApp() {
   const { session, needsPasswordReset, clearPasswordReset } = useAuth()
@@ -42,7 +41,6 @@ function ProtectedApp() {
             <Route path="/amazon-poukazy"  element={<AmazonPoukazy />} />
             <Route path="/myslenky"        element={<Myslenky />} />
             <Route path="/pridat"          element={<PridatZaznam />} />
-            <Route path="/zaznamy"   element={<Zaznamy />} />
           </Routes>
         </div>
       </main>

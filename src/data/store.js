@@ -274,6 +274,18 @@ const summariesStore = _sb('summaries')
 export const loadSummaries  = ()       => summariesStore.load()
 export const addSummary     = d        => summariesStore.add(d)
 
+// ── Activity log ──────────────────────────────
+export async function loadActivity() {
+  const { data, error } = await supabase
+    .from('activity_log')
+    .select('*')
+    .order('createdAt', { ascending: false })
+    .limit(300)
+  if (error) { console.error('loadActivity:', error); return [] }
+  return data
+}
+export const addActivity = d => _sb('activity_log').add(d)
+
 // ── Storage: Přílohy ──────────────────────────
 
 const BUCKET = 'attachments'

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Layers, BarChart2, ShoppingBag, List, Plus, PanelLeftClose, PanelLeftOpen, LogOut, Tag, Brain } from 'lucide-react'
+import { Layers, BarChart2, ShoppingBag, Plus, PanelLeftClose, PanelLeftOpen, LogOut, Tag, Brain } from 'lucide-react'
 import { useAuth } from '../lib/auth.jsx'
 
 const links = [
@@ -8,8 +8,7 @@ const links = [
   { to: '/prodej',          label: 'Prodej',          icon: ShoppingBag },
   { to: '/amazon-poukazy', label: 'Amazon poukazy',  icon: Tag },
   { to: '/myslenky',       label: 'Myšlenky',        icon: Brain },
-  { to: '/zaznamy',        label: 'Záznamy',         icon: List },
-  { to: '/pridat',   label: 'Přidat',     icon: Plus },
+  { to: '/pridat',         label: 'Přidat',          icon: Plus },
 ]
 
 export default function Navbar({ isOpen, onToggle }) {
