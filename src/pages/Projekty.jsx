@@ -137,7 +137,7 @@ function Checklist({ items, taskId, onChange }) {
   }
 
   return (
-    <div className="ml-[4.5rem] pl-5 pr-3 pt-2 pb-2 space-y-1.5 border-t border-l border-border/20 bg-white/[0.01]">
+    <div className="ml-[6.5rem] pl-5 pr-3 pt-2 pb-2 space-y-1.5 border-t border-l border-border/20 bg-white/[0.01]">
       {items.map(it => (
         <div key={it.id} className="flex items-center gap-2 group">
           <button type="button" onClick={() => onChange(items.map(i => i.id === it.id ? { ...i, done: !i.done } : i))}
@@ -173,7 +173,7 @@ function TaskRow({ task, onSave, onDelete }) {
 
   return (
     <div className={`border-b border-border/20 last:border-0 ${task.urgent ? 'bg-orange-500/[0.04]' : ''}`}>
-      <div className="flex items-start gap-2 pl-12 pr-3 py-2.5 group hover:bg-white/[0.02]">
+      <div className="flex items-start gap-2 pl-20 pr-3 py-2.5 group hover:bg-white/[0.02]">
         <button type="button" onClick={() => setOpen(o => !o)} className="text-muted hover:text-white transition-colors shrink-0 mt-0.5">
           {open ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
         </button>
@@ -268,7 +268,7 @@ function QuickAddTask({ onAdd }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-2 pl-12 pr-5 py-2 border-t border-border/20">
+    <form onSubmit={submit} className="flex items-center gap-2 pl-20 pr-5 py-2 border-t border-border/20">
       <Plus size={11} className="text-muted/50 shrink-0" />
       <input ref={ref} value={text} onChange={e => setText(e.target.value)} placeholder="Nový úkol… (Enter)"
         className="flex-1 bg-transparent text-xs text-white/80 placeholder:text-white/20 outline-none" />
@@ -288,7 +288,7 @@ function ProjectCard({ project, tasks, isOpen, onToggle, onSaveProj, onDeletePro
 
   return (
     <div className="rounded-lg border border-border overflow-hidden">
-      <div className="flex items-start gap-2 pl-6 pr-4 py-3 bg-surface hover:bg-white/[0.03] transition-colors group">
+      <div className="flex items-start gap-2 pl-8 pr-4 py-3 bg-surface hover:bg-white/[0.03] transition-colors group">
         <button type="button" onClick={onToggle} className="text-muted hover:text-white transition-colors shrink-0 mt-0.5">
           {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         </button>
@@ -324,11 +324,11 @@ function ProjectCard({ project, tasks, isOpen, onToggle, onSaveProj, onDeletePro
 
       {isOpen && (
         <div className="border-t border-border/40">
-          {tasks.length === 0 && <p className="text-xs text-muted pl-12 pr-5 py-3">Žádné úkoly.</p>}
+          {tasks.length === 0 && <p className="text-xs text-muted pl-20 pr-5 py-3">Žádné úkoly.</p>}
           {pending.map(t => <TaskRow key={t.id} task={t} onSave={onSaveTask} onDelete={onDeleteTask} />)}
           {doneList.length > 0 && (
             <button type="button" onClick={() => setShowDone(s => !s)}
-              className="w-full flex items-center gap-1.5 pl-12 pr-5 py-1.5 text-xs text-muted/60 hover:text-muted border-t border-border/20 transition-colors">
+              className="w-full flex items-center gap-1.5 pl-20 pr-5 py-1.5 text-xs text-muted/60 hover:text-muted border-t border-border/20 transition-colors">
               {showDone ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
               Hotovo ({doneList.length})
             </button>
