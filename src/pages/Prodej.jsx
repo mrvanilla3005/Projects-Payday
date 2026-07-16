@@ -130,6 +130,14 @@ function ZasobyTable({ kategorie, items, onUpdate, onDelete, onAdd }) {
 
   return (
     <div className="overflow-x-auto">
+      <div className="px-4 py-3 border-b border-border/20">
+        <button
+          onClick={() => onAdd(kategorie)}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-info/40 text-info hover:bg-info/10 hover:border-info/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat zboží
+        </button>
+      </div>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border/30">
@@ -166,14 +174,6 @@ function ZasobyTable({ kategorie, items, onUpdate, onDelete, onAdd }) {
           ))}
         </tbody>
       </table>
-      <div className="px-4 py-3 border-t border-border/20">
-        <button
-          onClick={() => onAdd(kategorie)}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-info/40 text-info hover:bg-info/10 hover:border-info/70 text-sm font-medium transition-colors"
-        >
-          <Plus size={14} /> Přidat zboží
-        </button>
-      </div>
     </div>
   )
 }
@@ -214,6 +214,22 @@ function IPhonyZasobyTable({ items, onUpdate, onDelete, onAdd, onTransfer }) {
 
   return (
     <div className="overflow-x-auto">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border/20">
+        <button
+          onClick={() => onAdd('iphone')}
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat zboží
+        </button>
+        {selectedIds.size > 0 && (
+          <button
+            onClick={handleTransfer}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/15 border border-accent/50 text-accent hover:bg-accent/25 text-sm font-medium transition-colors shrink-0"
+          >
+            <ArrowRight size={14} /> Přesunout do prodeje ({selectedIds.size})
+          </button>
+        )}
+      </div>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border/30">
@@ -281,22 +297,6 @@ function IPhonyZasobyTable({ items, onUpdate, onDelete, onAdd, onTransfer }) {
           ))}
         </tbody>
       </table>
-      <div className="flex items-center gap-2 px-4 py-3 border-t border-border/20">
-        <button
-          onClick={() => onAdd('iphone')}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70 text-sm font-medium transition-colors"
-        >
-          <Plus size={14} /> Přidat zboží
-        </button>
-        {selectedIds.size > 0 && (
-          <button
-            onClick={handleTransfer}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/15 border border-accent/50 text-accent hover:bg-accent/25 text-sm font-medium transition-colors shrink-0"
-          >
-            <ArrowRight size={14} /> Přesunout do prodeje ({selectedIds.size})
-          </button>
-        )}
-      </div>
     </div>
   )
 }
@@ -355,6 +355,14 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
 
   return (
     <div className="overflow-x-auto">
+      <div className="px-4 py-3 border-b border-border/20">
+        <button
+          onClick={() => onAdd('iphone')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat prodej
+        </button>
+      </div>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border/30">
@@ -465,14 +473,6 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
           ))}
         </tbody>
       </table>
-      <div className="px-4 py-3 border-t border-border/20">
-        <button
-          onClick={() => onAdd('iphone')}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70 text-sm font-medium transition-colors"
-        >
-          <Plus size={14} /> Přidat prodej
-        </button>
-      </div>
     </div>
   )
 }
@@ -492,6 +492,14 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
 
   return (
     <div className="overflow-x-auto">
+      <div className="px-4 py-3 border-b border-border/20">
+        <button
+          onClick={() => onAdd('elektronika')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-info/40 text-info hover:bg-info/10 hover:border-info/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat prodej
+        </button>
+      </div>
       <table className="w-full">
         <thead>
           <tr className="border-b border-border/30">
@@ -581,14 +589,6 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
           ))}
         </tbody>
       </table>
-      <div className="px-4 py-3 border-t border-border/20">
-        <button
-          onClick={() => onAdd('elektronika')}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-info/40 text-info hover:bg-info/10 hover:border-info/70 text-sm font-medium transition-colors"
-        >
-          <Plus size={14} /> Přidat prodej
-        </button>
-      </div>
     </div>
   )
 }
