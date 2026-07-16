@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Mic, MicOff, Save, Trash2, ChevronDown, ChevronRight, ArrowUpRight } from 'lucide-react'
-import { loadThoughts, addThought, updateThought, deleteThought, addDna, DNA_TOPICS } from '../data/store.js'
+import { Mic, MicOff, Save, Trash2, ChevronDown, ChevronRight } from 'lucide-react'
+import { loadThoughts, addThought, updateThought, deleteThought, DNA_TOPICS } from '../data/store.js'
 import AttachmentPanel from '../components/AttachmentPanel.jsx'
 
 export default function Myslenky() {
@@ -12,7 +12,6 @@ export default function Myslenky() {
   const [priorita, setPriorita]     = useState(null)
   const [supported, setSupported]   = useState(true)
   const [open, setOpen]             = useState(() => new Set(DNA_TOPICS.map(t => t.id)))
-  const [promoted, setPromoted]     = useState(null)
   const recognitionRef = useRef(null)
 
   async function reload() {
@@ -70,19 +69,6 @@ export default function Myslenky() {
     setInterim('')
     setProjekt('')
     setPriorita(null)
-    await reload()
-  }
-
-  async function promote(thought) {
-    await addDna({
-      topic: thought.projekt || 'ostatni',
-      dta: 'Do',
-      subtopic: '',
-      content: thought.text,
-      status: 'Not started',
-      datum: thought.datum || new Date().toISOString().slice(0, 10),
-    })
-    await deleteThought(thought.id)
     await reload()
   }
 
@@ -212,14 +198,6 @@ export default function Myslenky() {
                           storagePath={`thought/${t.id}`}
                           onSave={atts => saveAttachments(t, atts)}
                         />
-                        {promoted === t.id ? (
-                          <span className="text-xs text-success px-2 py-1 font-medium">✓ Přidáno</span>
-                        ) : (
-                          <button onClick={() => promote(t)} title="Přidat jako úkol do Projektů"
-                            className="text-muted hover:text-accent transition-colors p-1">
-                            <ArrowUpRight size={15} />
-                          </button>
-                        )}
                         <button onClick={() => del(t.id)} className="text-muted hover:text-danger transition-colors p-1">
                           <Trash2 size={13} />
                         </button>

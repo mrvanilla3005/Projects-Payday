@@ -249,21 +249,6 @@ export const DNA_TOPICS = [
   { id: 'ostatni', label: 'Ostatní',     sub: '', dot: 'bg-white/30'   },
 ]
 
-export const DNA_DTA = [
-  { id: 'PROJECT', label: 'PROJECT', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30'         },
-  { id: 'Do',      label: 'Do',      color: 'bg-red-500/20 text-red-400 border-red-500/30'             },
-  { id: 'Ask',     label: 'Ask',     color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'   },
-  { id: 'Tell',    label: 'Tell',    color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
-]
-
-export const DNA_STATUS = ['Not started', 'In progress', 'Done']
-
-const dnaStore = _sb('dna')
-export const loadDna   = ()       => dnaStore.load()
-export const addDna    = d        => dnaStore.add(d)
-export const updateDna = (id, d)  => dnaStore.update(id, d)
-export const deleteDna = id       => dnaStore.remove(id)
-
 const thoughtsStore = _sb('thoughts')
 export const loadThoughts   = ()       => thoughtsStore.load()
 export const addThought     = d        => thoughtsStore.add(d)
