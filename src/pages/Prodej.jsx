@@ -6,6 +6,34 @@ import {
 } from '../data/store.js'
 import { Plus, Trash2, Copy, ChevronDown, ChevronRight, Smartphone, Cpu, GripVertical, ArrowRight } from 'lucide-react'
 
+// ── Měsíční seskupení prodejů ───────────────────────────
+const fmtMonth = m => new Date(m + '-15T12:00:00').toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })
+
+// Skutečná částka za den: zadaná celková cena, jinak teoretický součet kusů × cena
+function dayActual(dayItems) {
+  const teor = dayItems.reduce((s, r) => s + (r.kusu || 0) * (r.cena || 0), 0)
+  const celk = dayItems.find(r => r.celkova_cena != null)?.celkova_cena
+  return celk ?? teor
+}
+
+function groupByMonth(sortedDates) {
+  const months = {}
+  sortedDates.forEach(d => { (months[d.slice(0, 7) || '—'] ??= []).push(d) })
+  return Object.keys(months).sort((a, b) => b.localeCompare(a)).map(m => ({ month: m, dates: months[m] }))
+}
+
+function MonthHeaderRow({ month, total, colSpan }) {
+  return (
+    <tr className="border-b border-border/40 bg-white/[0.05]">
+      <td colSpan={colSpan} className="px-5 py-2 whitespace-nowrap">
+        <span className="text-white font-semibold text-sm capitalize">{fmtMonth(month)}</span>
+        <span className="text-muted text-xs ml-3">celkem</span>
+        <span className="font-mono text-success font-semibold text-sm ml-2">{formatCZK(total)}</span>
+      </td>
+    </tr>
+  )
+}
+
 // ── Inline buňka ────────────────────────────────────────
 function Cell({ value, type = 'text', step, onSave, fmt, colorFn, readOnly }) {
   const [on, setOn]     = useState(false)
@@ -321,6 +349,7 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
   items.forEach(r => { const d = r.datum || ''; if (!groups[d]) groups[d] = []; groups[d].push(r) })
   Object.values(groups).forEach(g => g.sort(sortRow))
   const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
+  const byMonth = groupByMonth(sortedDates)
 
   return (
     <div className="overflow-x-auto">
@@ -334,9 +363,13 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
         </thead>
         <tbody>
           {items.length === 0 && (
-            <tr><td colSpan={10} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
+            <tr><td colSpan={11} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
           )}
-          {sortedDates.map(datum => {
+          {byMonth.map(({ month, dates }) => (
+            <Fragment key={month}>
+              <MonthHeaderRow month={month} colSpan={11}
+                total={dates.reduce((s, d) => s + dayActual(groups[d]), 0)} />
+              {dates.map(datum => {
             const dayItems = groups[datum]
             const teorTotal = dayItems.reduce((s, r) => s + (r.kusu || 0) * (r.cena || 0), 0)
             const celkovaCena = dayItems.find(r => r.celkova_cena != null)?.celkova_cena ?? null
@@ -426,6 +459,8 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
               </Fragment>
             )
           })}
+            </Fragment>
+          ))}
         </tbody>
       </table>
       <button
@@ -449,6 +484,7 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
   items.forEach(r => { const d = r.datum || ''; if (!groups[d]) groups[d] = []; groups[d].push(r) })
   Object.values(groups).forEach(g => g.sort((a, b) => (a.cena ?? 0) - (b.cena ?? 0)))
   const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a))
+  const byMonth = groupByMonth(sortedDates)
 
   return (
     <div className="overflow-x-auto">
@@ -462,9 +498,13 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
         </thead>
         <tbody>
           {items.length === 0 && (
-            <tr><td colSpan={7} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
+            <tr><td colSpan={8} className="px-5 py-3 text-muted text-sm">Žádné prodeje.</td></tr>
           )}
-          {sortedDates.map(datum => {
+          {byMonth.map(({ month, dates }) => (
+            <Fragment key={month}>
+              <MonthHeaderRow month={month} colSpan={8}
+                total={dates.reduce((s, d) => s + dayActual(groups[d]), 0)} />
+              {dates.map(datum => {
             const dayItems    = groups[datum]
             const teorTotal   = dayItems.reduce((s, r) => s + (r.kusu || 0) * (r.cena || 0), 0)
             const celkovaCena = dayItems.find(r => r.celkova_cena != null)?.celkova_cena ?? null
@@ -533,6 +573,8 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
               </Fragment>
             )
           })}
+            </Fragment>
+          ))}
         </tbody>
       </table>
       <button
@@ -623,6 +665,15 @@ export default function Prodej() {
   const dispIphone = iPhoneZasoby.reduce((s, z) => s + (z.kusu || 0), 0)
   const dispElek   = elekZasoby.reduce((s, z) => s + (z.kusu || 0), 0)
 
+  // Celková tržba: po dnech, zadaná celková cena má přednost před kusy × cena
+  const trzba = list => {
+    const byDay = {}
+    list.forEach(r => { (byDay[r.datum || ''] ??= []).push(r) })
+    return Object.values(byDay).reduce((s, day) => s + dayActual(day), 0)
+  }
+  const trzbaIphone = trzba(iPhoneProdeje)
+  const trzbaElek   = trzba(elekProdeje)
+
   return (
     <div className="space-y-6">
       <div>
@@ -631,7 +682,17 @@ export default function Prodej() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="card">
+          <p className="text-xs text-muted uppercase tracking-wider mb-1">Prodej iPhone</p>
+          <p className="text-2xl font-bold font-mono text-accent">{formatCZK(trzbaIphone)}</p>
+          <p className="text-xs text-muted mt-0.5">celkem za prodeje</p>
+        </div>
+        <div className="card">
+          <p className="text-xs text-muted uppercase tracking-wider mb-1">Prodej elektronika</p>
+          <p className="text-2xl font-bold font-mono text-info">{formatCZK(trzbaElek)}</p>
+          <p className="text-xs text-muted mt-0.5">celkem za prodeje</p>
+        </div>
         <div className="card">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">Provize iPhone</p>
           <p className="text-2xl font-bold font-mono text-accent">{formatCZK(provizeIphone)}</p>
