@@ -380,7 +380,7 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
               <Fragment key={datum}>
                 {dayItems.map(r => (
                   <tr key={r.id} className="border-b border-border/10 hover:bg-white/[0.025] group">
-                    <td className="px-1 py-0.5 pl-3 min-w-[110px]">
+                    <td className="px-1 py-0.5 pl-8 min-w-[110px]">
                       <Cell value={r.datum} type="date" onSave={v => onUpdate(r.id, { datum: v })} fmt={fmtDate} />
                     </td>
                     <td className="px-1 py-0.5 min-w-[55px]">
@@ -431,7 +431,7 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
 
                 {/* Souhrnný řádek za den */}
                 <tr className="border-b border-border/30 bg-white/[0.025]">
-                  <td colSpan={6} className="px-5 py-2 text-xs text-muted font-medium">
+                  <td colSpan={6} className="pl-10 pr-5 py-2 text-xs text-muted font-medium">
                     {fmtDate(datum)} · součet
                   </td>
                   <td className="px-3 py-2 font-mono text-sm text-white font-semibold whitespace-nowrap">
@@ -515,7 +515,7 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
               <Fragment key={datum}>
                 {dayItems.map(r => (
                   <tr key={r.id} className="border-b border-border/10 hover:bg-white/[0.025] group">
-                    <td className="px-1 py-0.5 pl-3 min-w-[110px]">
+                    <td className="px-1 py-0.5 pl-8 min-w-[110px]">
                       <Cell value={r.datum} type="date" onSave={v => onUpdate(r.id, { datum: v })} fmt={fmtDate} />
                     </td>
                     <td className="px-1 py-0.5 min-w-[160px]">
@@ -545,7 +545,7 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
                 ))}
                 {/* Souhrnný řádek za den */}
                 <tr className="border-b border-border/30 bg-white/[0.025]">
-                  <td colSpan={3} className="px-5 py-2 text-xs text-muted font-medium">
+                  <td colSpan={3} className="pl-10 pr-5 py-2 text-xs text-muted font-medium">
                     {fmtDate(datum)} · součet
                   </td>
                   <td className="px-3 py-2 font-mono text-sm text-white font-semibold whitespace-nowrap">
@@ -682,26 +682,22 @@ export default function Prodej() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="card">
-          <p className="text-xs text-muted uppercase tracking-wider mb-1">Prodej iPhone</p>
-          <p className="text-2xl font-bold font-mono text-accent">{formatCZK(trzbaIphone)}</p>
-          <p className="text-xs text-muted mt-0.5">celkem za prodeje</p>
-        </div>
-        <div className="card">
-          <p className="text-xs text-muted uppercase tracking-wider mb-1">Prodej elektronika</p>
-          <p className="text-2xl font-bold font-mono text-info">{formatCZK(trzbaElek)}</p>
-          <p className="text-xs text-muted mt-0.5">celkem za prodeje</p>
-        </div>
+      <div className="grid grid-cols-3 gap-4">
         <div className="card">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">Provize iPhone</p>
           <p className="text-2xl font-bold font-mono text-accent">{formatCZK(provizeIphone)}</p>
           <p className="text-xs text-muted mt-0.5">16→10 % · 17→5 %</p>
+          <p className="text-xs text-muted mt-1.5 pt-1.5 border-t border-border/30">
+            Prodej celkem <span className="font-mono text-white/80 font-semibold ml-1">{formatCZK(trzbaIphone)}</span>
+          </p>
         </div>
         <div className="card">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">Provize elektronika</p>
           <p className="text-2xl font-bold font-mono text-info">{formatCZK(provizeElek)}</p>
           <p className="text-xs text-muted mt-0.5">sazba 10 %</p>
+          <p className="text-xs text-muted mt-1.5 pt-1.5 border-t border-border/30">
+            Prodej celkem <span className="font-mono text-white/80 font-semibold ml-1">{formatCZK(trzbaElek)}</span>
+          </p>
         </div>
         <div className="card">
           <p className="text-xs text-muted uppercase tracking-wider mb-1">K dispozici</p>
