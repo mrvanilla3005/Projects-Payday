@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: 'PAYDAY – Přehled práce',
-        short_name: 'PAYDAY',
+        name: 'SYS',
+        short_name: 'SYS',
         description: 'Projekty a vyrovnání',
         theme_color: '#0f1117',
         background_color: '#0f1117',
