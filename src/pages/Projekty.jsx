@@ -137,7 +137,7 @@ function Checklist({ items, taskId, onChange }) {
   }
 
   return (
-    <div className="pl-10 pr-3 pt-2 pb-2 space-y-1.5 border-t border-border/20 bg-white/[0.01]">
+    <div className="ml-9 pl-5 pr-3 pt-2 pb-2 space-y-1.5 border-t border-l border-border/20 bg-white/[0.01]">
       {items.map(it => (
         <div key={it.id} className="flex items-center gap-2 group">
           <button type="button" onClick={() => onChange(items.map(i => i.id === it.id ? { ...i, done: !i.done } : i))}
