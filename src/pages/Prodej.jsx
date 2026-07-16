@@ -166,12 +166,14 @@ function ZasobyTable({ kategorie, items, onUpdate, onDelete, onAdd }) {
           ))}
         </tbody>
       </table>
-      <button
-        onClick={() => onAdd(kategorie)}
-        className="w-full flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm border-t border-border/20 transition-colors"
-      >
-        <Plus size={13} /> Přidat zboží
-      </button>
+      <div className="px-4 py-3 border-t border-border/20">
+        <button
+          onClick={() => onAdd(kategorie)}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-info/40 text-info hover:bg-info/10 hover:border-info/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat zboží
+        </button>
+      </div>
     </div>
   )
 }
@@ -279,19 +281,19 @@ function IPhonyZasobyTable({ items, onUpdate, onDelete, onAdd, onTransfer }) {
           ))}
         </tbody>
       </table>
-      <div className="flex items-center border-t border-border/20">
+      <div className="flex items-center gap-2 px-4 py-3 border-t border-border/20">
         <button
           onClick={() => onAdd('iphone')}
-          className="flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm transition-colors flex-1"
+          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70 text-sm font-medium transition-colors"
         >
-          <Plus size={13} /> Přidat zboží
+          <Plus size={14} /> Přidat zboží
         </button>
         {selectedIds.size > 0 && (
           <button
             onClick={handleTransfer}
-            className="flex items-center gap-2 px-4 py-2.5 text-accent hover:text-white hover:bg-accent/10 text-sm transition-colors border-l border-border/20 font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/15 border border-accent/50 text-accent hover:bg-accent/25 text-sm font-medium transition-colors shrink-0"
           >
-            <ArrowRight size={13} /> Přesunout do prodeje ({selectedIds.size})
+            <ArrowRight size={14} /> Přesunout do prodeje ({selectedIds.size})
           </button>
         )}
       </div>
@@ -463,12 +465,14 @@ function IPhonyProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd, o
           ))}
         </tbody>
       </table>
-      <button
-        onClick={() => onAdd('iphone')}
-        className="w-full flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm border-t border-border/20 transition-colors"
-      >
-        <Plus size={13} /> Přidat prodej
-      </button>
+      <div className="px-4 py-3 border-t border-border/20">
+        <button
+          onClick={() => onAdd('iphone')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-accent/40 text-accent hover:bg-accent/10 hover:border-accent/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat prodej
+        </button>
+      </div>
     </div>
   )
 }
@@ -577,12 +581,14 @@ function ProdejeTable({ items, onUpdate, onUpdateBatch, onDelete, onAdd }) {
           ))}
         </tbody>
       </table>
-      <button
-        onClick={() => onAdd('elektronika')}
-        className="w-full flex items-center gap-2 px-5 py-2.5 text-muted hover:text-white hover:bg-white/5 text-sm border-t border-border/20 transition-colors"
-      >
-        <Plus size={13} /> Přidat prodej
-      </button>
+      <div className="px-4 py-3 border-t border-border/20">
+        <button
+          onClick={() => onAdd('elektronika')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-dashed border-info/40 text-info hover:bg-info/10 hover:border-info/70 text-sm font-medium transition-colors"
+        >
+          <Plus size={14} /> Přidat prodej
+        </button>
+      </div>
     </div>
   )
 }
